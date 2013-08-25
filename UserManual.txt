@@ -5,8 +5,8 @@ Having Issues? Well...
 ---------------------------------------------------------------------------------------------------------------
 1. Did you read the instructions and disclaimers in the excel document (WMS_Scheduler)?
 -a. Did you use "Sheet1" for Semester I and "Sheet2" for Semester II -OR- Do you not know what a sheet is?
--b. Did you use the most recent A day for "Past A Day (PAD)" in Fig. 4?
--c. Did you check the holidays / breaks?
+-b. Did you use the most recent A day for "Past A Day (PAD)" in Fig. 3?
+-c. Did you check the holidays / breaks in Fig. 4?
 -d. Did you use only numbers 1-8 in Fig. 2 (with 8 being a free period)?
 
 2. Did you enable macros for the WMS_Scheduler_Macro.xlsm doc -OR- Do you not know how to enable Macros?
