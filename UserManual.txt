@@ -41,6 +41,10 @@ to set the "Date To Schedule" to today's date. To use this functionality, Macros
 3> I've opened up a file, but I'm not sure where to start.
 ---------------------------------------------------------------------------------------------------------------
 If this is your first time using the document, then you will need to run through "Setup" under "Instructions".
+
+You will have to do the "Setup" for BOTH sheets (Sheet1 and Sheet2) to schedule Semester I and Semester II.
+Fortunately, the process is the same for both.
+
 Once "Setup" is complete, just follow the checklist under "Usage" everytime you want to schedule a date.
 
 
@@ -51,6 +55,7 @@ Once "Setup" is complete, just follow the checklist under "Usage" everytime you 
 -b. Did you use the most recent A day for "Past A Day (PAD)" in Fig. 3?
 -c. Did you check the holidays / breaks in Fig. 4?
 -d. Did you use only numbers 1-8 in Fig. 2 (with 8 being a free period)?
+-e. Did you look at the examples, Fig 2.1 through 2.3?
 
 2. Did you enable macros for the WMS_Scheduler_Macro.xlsm doc -OR- Do you not know how to enable Macros?
 
