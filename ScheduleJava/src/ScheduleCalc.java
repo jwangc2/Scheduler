@@ -45,7 +45,9 @@ public class ScheduleCalc {
 		
 		{new BlockRange(0, 1), new BlockRange(0, 1), new BlockRange(0, 1), new BlockRange(0, 1), new BlockRange(0, 1)},
 		{new BlockRange(1, 2), new BlockRange(1, 2), new BlockRange(1, 2), new BlockRange(1, 2), new BlockRange(1, 2)},
-		{new BlockRange(2, 3), new BlockRange(2, 3), new BlockRange(2, 3), new BlockRange(2, 3), new BlockRange(2, 3)}
+		{new BlockRange(2, 3), new BlockRange(2, 3), new BlockRange(2, 3), new BlockRange(2, 3), new BlockRange(2, 3)},
+		
+		{new BlockRange(3, 4), null, null, null, new BlockRange(3, 4)}
 
 	};
 	
@@ -63,7 +65,9 @@ public class ScheduleCalc {
 		
 		{"Monday", "Tuesday", "Wednesday", "Thursday", "Friday"},
 		{"Date", "Date", "Date", "Date", "Date"},
-		{"A", "B", "C", "D", "E"}
+		{"A", "B", "C", "D", "E"},
+		
+		{" ", " ", " ", " ", " "}
 	};
 	
 	public final static String[] TIMING_ROWS = {
