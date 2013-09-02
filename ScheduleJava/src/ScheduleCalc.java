@@ -12,23 +12,64 @@ import java.util.Scanner;
 
 public class ScheduleCalc {
 	
-	// static values
-	public static int WEEKEND = 0;
-	public static int LAB_FREE = 8;
-	public static int OFFICE_HOURS = 9;
-	public static int BREAK = 10;
-	public static int ASSEMBLY = 11;
-	public static int ADV = 12;
-	public static int FAC_PLC = 13;
-	public static int FAC_MTGS = 14;
-	public static int ARTS_ADV = 15;
-	public static int UNSCHEDULED = 16;
+	// final static values
+	public final static int WEEKEND = 0;
+	public final static int LAB_FREE = 8;
+	public final static int OFFICE_HOURS = 9;
+	public final static int BREAK = 10;
+	public final static int ASSEMBLY = 11;
+	public final static int ADV = 12;
+	public final static int FAC_PLC = 13;
+	public final static int FAC_MTGS = 14;
+	public final static int ARTS_ADV = 15;
+	public final static int UNSCHEDULED = 16;
 	
+	public final static int[][] INTERJECTIONS = {
+		{ScheduleCalc.OFFICE_HOURS, ScheduleCalc.FAC_PLC, ScheduleCalc.FAC_MTGS, ScheduleCalc.FAC_PLC, ScheduleCalc.OFFICE_HOURS},
+		{ScheduleCalc.BREAK, ScheduleCalc.BREAK, ScheduleCalc.BREAK, ScheduleCalc.ASSEMBLY, ScheduleCalc.ADV},
+		{ScheduleCalc.ARTS_ADV, ScheduleCalc.ARTS_ADV, ScheduleCalc.BREAK, ScheduleCalc.BREAK, ScheduleCalc.BREAK},
+		{ScheduleCalc.OFFICE_HOURS, ScheduleCalc.OFFICE_HOURS, ScheduleCalc.OFFICE_HOURS, ScheduleCalc.OFFICE_HOURS, ScheduleCalc.WEEKEND}
+	};
+	
+	public final static BlockRange[][] TIMINGS = {
+		
+		{new BlockRange(1, 2, 30), new BlockRange(0, 2), new BlockRange(0, 3), new BlockRange(0, 2), new BlockRange(1, 2, 30)},
+		{new BlockRange(4, 5), new BlockRange(4, 5), new BlockRange(7, 8), new BlockRange(4, 8), new BlockRange(4, 5)},
+		{new BlockRange(14, 17), new BlockRange(14, 17), new BlockRange(16, 17), new BlockRange(16, 17), new BlockRange(14, 15)},
+		{new BlockRange(20, 21, 30), new BlockRange(20, 21, 30), new BlockRange(20, 21, 30), new BlockRange(20, 21, 30), new BlockRange(19, 21)},
+		
+		{new BlockRange(2, 4), new BlockRange(2, 4), new BlockRange(3, 7), new BlockRange(2, 4), new BlockRange(2, 4)},
+		{new BlockRange(5, 10), new BlockRange(5, 10), new BlockRange(8, 11), new BlockRange(8, 11), new BlockRange(5, 10)},
+		{new BlockRange(10, 14), new BlockRange(10, 14), new BlockRange(11, 16), new BlockRange(11, 16), new BlockRange(10, 14)},
+		{new BlockRange(17, 20), new BlockRange(17, 20), new BlockRange(17, 20), new BlockRange(17, 20), new BlockRange(15, 19)}
+		
+		//{new BlockRange(0, 1), null, null, null, new BlockRange(0, 1)}
+	};
+	
+	public final static String[][] TIMING_TEXT = {
+		{"(8:00-8:30)", "(7:45-8:30)", "(7:45-9:00)", "(7:45-8:30)", "(8:00-8:30)"},
+		{"(9:40-9:55)", "(9:40-9:55)", "(10:10-10:25)", "(9:40-10:25)", "(9:40-9:55)"},
+		{"(1:10-1:50)", "(1:10-1:50)", "(1:40-1:50)", "(1:40-1:50)", "(1:10-1:20)"},
+		{"(3:00-3:30)", "(3:00-3:30)", "(3:00-3:30)", "(3:00-3:30)", "(0:00)"},
+		
+		{"(8:30-9:40)", "(8:30-9:40)", "(9:00-10:10)", "(8:30-9:40)", "(8:30-9:40)"},
+		{"(9:55-11:05)", "(9:55-11:05)", "(10:25-11:35)", "(10:25-11:35)", "(9:55-11:05)"},
+		{"(11:05-1:10)", "(11:05-1:10)", "(11:35-1:40)", "(11:35-1:40)", "(11:05-1:10)"},
+		{"(1:50-3:00)", "(1:50-3:00)", "(1:50-3:00)", "(1:50-3:00)", "(1:20-2:30)"}
+	};
+	
+	public final static String[] TIMING_ROWS = {
+		"7:45","8:00","8:30","9:00",
+		"9:40","9:55","10:00","10:10",
+		"10:25","11:00","11:05","11:35",
+		"12:00","1:00","1:10","1:20","1:40",
+		"1:50","2:00","2:30","3:00- 3:30"
+	};
+
 	// members
-	String[] classes;
-	int[][] interjections;
-	boolean[][] labFrees;
-	public ArrayList<Date> holidays;
+	private String[] classes;
+	private boolean[][] labFrees;
+	private ArrayList<Date> holidays;
 	
 	public ScheduleCalc() {
 		initSchedule();
@@ -111,16 +152,10 @@ public class ScheduleCalc {
 		classes[ScheduleCalc.ARTS_ADV] = "ARTS/ADV";
 		classes[ScheduleCalc.UNSCHEDULED] = "Unscheduled";
 		
-		// Interjections by blocks
-		int[][] layout = {
-				{ScheduleCalc.OFFICE_HOURS, ScheduleCalc.FAC_PLC, ScheduleCalc.FAC_MTGS, ScheduleCalc.FAC_PLC, ScheduleCalc.OFFICE_HOURS},
-				{ScheduleCalc.BREAK, ScheduleCalc.BREAK, ScheduleCalc.BREAK, ScheduleCalc.ASSEMBLY, ScheduleCalc.ADV},
-				{ScheduleCalc.ARTS_ADV, ScheduleCalc.ARTS_ADV, ScheduleCalc.BREAK, ScheduleCalc.BREAK, ScheduleCalc.BREAK},
-				{ScheduleCalc.OFFICE_HOURS, ScheduleCalc.OFFICE_HOURS, ScheduleCalc.OFFICE_HOURS, ScheduleCalc.OFFICE_HOURS, ScheduleCalc.WEEKEND}
-		};
-		
-		interjections = layout;
-		
+		// Default class names
+		for (int i = 1; i <= 7; i ++) {
+			classes[i] = "Period " + i;
+		}
 	}
 	
 	// Returns the schedule of the [dateToSchedule] from a [pastADay] in the form of a Map<Block, Period>
@@ -151,6 +186,12 @@ public class ScheduleCalc {
 			// Determine what period the first block of this day should be
 			int firstPeriod = ((4 * (rotDay - 1)) % 7) + 1;
 			
+			
+			// Loop through each interjection block
+			for (int i = 0; i < 4; i ++) {
+				schedule.put(i, ScheduleCalc.INTERJECTIONS[i][dayOfWeek - 2]);
+			}
+
 			// Loop through each class block
 			for (int i = 0; i < 4; i ++) {
 				// Get this period based on the first block
@@ -160,18 +201,15 @@ public class ScheduleCalc {
 				if (labFrees[thisPeriod - 1][rotDay - 1]) {
 					thisPeriod = ScheduleCalc.LAB_FREE;
 				}
-				schedule.put(i, thisPeriod);
+				schedule.put(i + 4, thisPeriod);
 			}
 			
-			// Loop through each interjection block
-			for (int i = 4; i < 8; i ++) {
-				schedule.put(i, interjections[i - 4][dayOfWeek - 2]);
-			}
+			
 		}
 		
-		for (Map.Entry<Integer, Integer> entry : schedule.entrySet()) {
-			System.out.println("Block [" + entry.getKey() + "]: Period (" + entry.getValue() + "), " + classes[entry.getValue()]);
-		}
+//		for (Map.Entry<Integer, Integer> entry : schedule.entrySet()) {
+//			System.out.println("Block [" + entry.getKey() + "]: Period (" + entry.getValue() + "), " + classes[entry.getValue()]);
+//		}
 		
 		return schedule;
 	}
@@ -224,5 +262,14 @@ public class ScheduleCalc {
 	        w2 = Calendar.MONDAY;
 	    }
 	    return (int) (daysWithoutSunday-w1+w2);
+	}
+	
+	// Getters
+	public ArrayList<Date> getHolidays() {
+		return holidays;
+	}
+	
+	public String getClass(int period) {
+		return classes[period];
 	}
 }
