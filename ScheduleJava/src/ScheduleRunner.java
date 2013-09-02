@@ -6,6 +6,7 @@ import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
+import java.awt.Insets;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.io.File;
@@ -82,7 +83,7 @@ public class ScheduleRunner extends JFrame implements PropertyChangeListener{
         // Schedule Tab with BoxLayout (top to bottom)
         JPanel schedulePanel = new JPanel();
         schedulePanel.setLayout(new BoxLayout(schedulePanel, BoxLayout.Y_AXIS));
-        schedulePanel.setPreferredSize(new Dimension(900, 600));
+        schedulePanel.setPreferredSize(new Dimension(900, 720));
         
         // Input Panel
         JPanel inputPanel = createInputPane(900);
@@ -152,21 +153,42 @@ public class ScheduleRunner extends JFrame implements PropertyChangeListener{
 	private JPanel createInputPane(int width) {
 		// Base Pane
 		JPanel inputPane = new JPanel();
-		inputPane.setPreferredSize(new Dimension(width, 75));
+		inputPane.setLayout(new GridBagLayout());
+		//inputPane.setPreferredSize(new Dimension(width, 0));
 		
-		// Date Field
+		// Parse
+		GridBagConstraints c = new GridBagConstraints();
 		dateFormat = new SimpleDateFormat("MM/dd/yyyy");
-		dateField = new JFormattedTextField(dateFormat);
-		try {
-			dateToSchedule = dateFormat.parse("08/29/2013");
-			dateField.setValue(dateToSchedule);
-		} catch (ParseException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		dateField.setColumns(10);
-		dateField.addPropertyChangeListener("value", this);
 		
+		c.insets = new Insets(5, 5, 5, 5);
+		
+		// x = 0
+		c.fill = GridBagConstraints.NONE;
+		c.gridx = 0;
+		c.gridy = 0;
+		inputPane.add(new JPanel(), c);
+		
+		c.fill = GridBagConstraints.NONE;
+		c.gridx = 0;
+		c.gridy = 1;
+		inputPane.add(new JPanel(), c);
+		
+		c.fill = GridBagConstraints.NONE;
+		c.gridx = 0;
+		c.gridy = 2;
+		c.gridwidth = 2;
+		inputPane.add(new JButton("Previous Week"), c);
+		
+		c.fill = GridBagConstraints.NONE;
+		c.gridx = 0;
+		c.gridy = 3;
+		c.gridwidth = 1;
+		c.gridheight = GridBagConstraints.REMAINDER;
+		inputPane.add(new JPanel(), c);
+		
+		c.gridheight = 1;
+		// x = 1
+		c.fill = GridBagConstraints.NONE;
 		// PAD Field
 		padField = new JFormattedTextField(dateFormat);
 		try {
@@ -178,10 +200,68 @@ public class ScheduleRunner extends JFrame implements PropertyChangeListener{
 		}
 		padField.setColumns(10);
 		padField.addPropertyChangeListener("value", this);
+		c.gridx = 1;
+		c.gridy = 0;
+		c.gridwidth = 2;
+		inputPane.add(padField, c);
 		
-		inputPane.add(dateField);
-		inputPane.add(padField);
+		c.fill = GridBagConstraints.NONE;
+		// Date Field
+		dateField = new JFormattedTextField(dateFormat);
+		try {
+			dateToSchedule = dateFormat.parse("08/29/2013");
+			dateField.setValue(dateToSchedule);
+		} catch (ParseException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		dateField.setColumns(10);
+		dateField.addPropertyChangeListener("value", this);
+		c.gridx = 1;
+		c.gridy = 1;
+		c.gridwidth = 2;
+		inputPane.add(dateField, c);
 		
+		c.fill = GridBagConstraints.NONE;
+		c.gridx = 1;
+		c.gridy = 3;
+		c.gridwidth = 1;
+		c.gridheight = GridBagConstraints.REMAINDER;
+		inputPane.add(new JPanel(), c);
+		
+		c.gridheight = 1;
+		// x = 2
+		c.fill = GridBagConstraints.NONE;
+		c.gridx = 2;
+		c.gridy = 2;
+		c.gridwidth = 2;
+		inputPane.add(new JButton("Next Week"), c);
+		
+		c.fill = GridBagConstraints.NONE;
+		c.gridx = 2;
+		c.gridy = 3;
+		c.gridwidth = 1;
+		inputPane.add(new JPanel(), c);
+		
+		// x = 3
+		c.fill = GridBagConstraints.NONE;
+		c.gridx = 3;
+		c.gridy = 0;
+		c.gridwidth = 1;
+		inputPane.add(new JButton("Reset"), c);
+		
+		c.fill = GridBagConstraints.NONE;
+		c.gridx = 3;
+		c.gridy = 1;
+		c.gridwidth = 1;
+		inputPane.add(new JButton("Reset"), c);
+		
+		c.fill = GridBagConstraints.NONE;
+		c.gridx = 3;
+		c.gridy = 3;
+		c.gridheight = GridBagConstraints.REMAINDER;
+		inputPane.add(new JPanel(), c);
+
 		return inputPane;
 	}
 	
