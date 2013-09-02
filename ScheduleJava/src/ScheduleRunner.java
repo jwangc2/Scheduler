@@ -6,7 +6,10 @@ import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
+import java.beans.PropertyChangeEvent;
+import java.beans.PropertyChangeListener;
 import java.io.File;
+import java.text.NumberFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
@@ -19,6 +22,7 @@ import java.util.Map;
 import javax.swing.BorderFactory;
 import javax.swing.BoxLayout;
 import javax.swing.JButton;
+import javax.swing.JFormattedTextField;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JMenuBar;
@@ -27,38 +31,34 @@ import javax.swing.JTabbedPane;
 import javax.swing.SwingConstants;
 import javax.swing.border.Border;
 
-public class ScheduleRunner extends JFrame{
+public class ScheduleRunner extends JFrame implements PropertyChangeListener{
 	
 	JLabel[][] displayLabels;
+	JFormattedTextField dateField;
+	JFormattedTextField padField;
+	Date dateToSchedule;
+	Date pastADay;
+	ScheduleCalc sc;
 	
 	public static void main(String[] args) {
         //Schedule a job for the event-dispatching thread:
         //creating and showing this application's GUI.
         javax.swing.SwingUtilities.invokeLater(new Runnable() {
             public void run() {
-            	
-            	// Test
-            	SimpleDateFormat formatter = new SimpleDateFormat("MM/dd/yyyy");
-            	try {
-            		ScheduleCalc sc = new ScheduleCalc(new File("./data/setup.csv"));
-					Date pastADay = formatter.parse("08/15/2013");
-					Date testDate = formatter.parse("01/10/2014");
-            	
-	            	// Run the gui
-	            	ScheduleRunner sch = new ScheduleRunner("WMS Scheduler");
-	            	sch.setVisible(true);
-	            	sch.updateSchedule(sc, testDate, pastADay);
-            	} catch (ParseException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-            }
+    			// Run the gui
+            	ScheduleRunner sch = new ScheduleRunner("WMS Scheduler");
+            	sch.setVisible(true);
+	            
+        	} 
+            
         });
     }
 	
 	public ScheduleRunner(String label){
 		super(label);
+		sc = new ScheduleCalc(new File("./data/setup.csv"));
 		initComponents();
+		updateSchedule(sc, dateToSchedule, pastADay);
 	}
 	
 	private void initComponents() {
@@ -84,8 +84,7 @@ public class ScheduleRunner extends JFrame{
         schedulePanel.setPreferredSize(new Dimension(900, 640));
         
         // Input Panel
-        JPanel inputPanel = new JPanel();
-        inputPanel.setPreferredSize(new Dimension(900, 75));
+        JPanel inputPanel = createInputPane(900);
         
         // Display Panel 
         JPanel gridPanel = createScheduleGrid(ScheduleCalc.TIMINGS);
@@ -138,6 +137,53 @@ public class ScheduleRunner extends JFrame{
 			c.add(Calendar.DATE, 1);
 		}
 	}
+	
+	private JPanel createInputPane(int width) {
+		// Base Pane
+		JPanel inputPane = new JPanel();
+		inputPane.setPreferredSize(new Dimension(width, 75));
+		
+		// Date Field
+		SimpleDateFormat dateFormat = new SimpleDateFormat("MM/dd/yyyy");
+		dateField = new JFormattedTextField(dateFormat);
+		try {
+			dateToSchedule = dateFormat.parse("08/29/2013");
+			dateField.setValue(dateToSchedule);
+		} catch (ParseException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		dateField.setColumns(10);
+		dateField.addPropertyChangeListener("value", this);
+		
+		// PAD Field
+		padField = new JFormattedTextField(dateFormat);
+		try {
+			pastADay = dateFormat.parse("08/15/2013");
+			padField.setValue(pastADay);
+		} catch (ParseException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		padField.setColumns(10);
+		padField.addPropertyChangeListener("value", this);
+		
+		inputPane.add(dateField);
+		inputPane.add(padField);
+		
+		return inputPane;
+	}
+	
+	public void propertyChange(PropertyChangeEvent e) {
+        Object source = e.getSource();
+        if (source == dateField) {
+            dateToSchedule = ((Date)dateField.getValue());
+        } else if (source == padField) {
+        	pastADay = ((Date)padField.getValue());
+        }
+
+        updateSchedule(sc, dateToSchedule, pastADay);
+    }
 	
 	// Personalized grid pane
 	private JPanel createScheduleGrid(BlockRange[][] blockRanges) {

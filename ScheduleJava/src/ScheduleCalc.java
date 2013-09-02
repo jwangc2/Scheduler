@@ -162,12 +162,16 @@ public class ScheduleCalc {
 	public HashMap<Integer, Integer> getSchedule(Date dateToSchedule, Date pastADay) {
 		HashMap<Integer, Integer> schedule = new HashMap<Integer, Integer>();
 		
+		Date dateToUse = dateToSchedule;
+		if (dateToSchedule.before(pastADay))
+			dateToUse = pastADay;
+		
 		// Get the rotation day
-		int rotDay = (weekdaysFactor(pastADay, dateToSchedule) % 7) + 1;
+		int rotDay = (weekdaysFactor(pastADay, dateToUse) % 7) + 1;
 		
 		// Get the day of the week
 		Calendar c = GregorianCalendar.getInstance();
-		c.setTime(dateToSchedule);
+		c.setTime(dateToUse);
 		int dayOfWeek = c.get(Calendar.DAY_OF_WEEK);
 		
 		
@@ -176,7 +180,7 @@ public class ScheduleCalc {
 				schedule.put(i, ScheduleCalc.WEEKEND);
 		}
 		
-		else if (holidays.contains(dateToSchedule)) {                        			// Check for holidays
+		else if (holidays.contains(dateToUse)) {                        			// Check for holidays
 			for (int i = 0; i < 8; i ++)
 				schedule.put(i,  ScheduleCalc.UNSCHEDULED);
 		}
@@ -198,6 +202,7 @@ public class ScheduleCalc {
 				int thisPeriod = ((firstPeriod + i - 1) % 7) + 1;
 				
 				// Check if this is a lab free
+				System.out.println("Period: " + thisPeriod + " | Rot: " + rotDay);
 				if (labFrees[thisPeriod - 1][rotDay - 1]) {
 					thisPeriod = ScheduleCalc.LAB_FREE;
 				}
