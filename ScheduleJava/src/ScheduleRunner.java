@@ -7,6 +7,8 @@ import java.awt.FlowLayout;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.io.File;
@@ -35,11 +37,13 @@ import javax.swing.border.Border;
 public class ScheduleRunner extends JFrame implements PropertyChangeListener{
 	
 	JLabel[][] displayLabels;
+	
 	SimpleDateFormat dateFormat;
 	JFormattedTextField dateField;
 	JFormattedTextField padField;
 	Date dateToSchedule;
 	Date pastADay;
+	
 	ScheduleCalc sc;
 	
 	public static void main(String[] args) {
@@ -58,7 +62,7 @@ public class ScheduleRunner extends JFrame implements PropertyChangeListener{
 	
 	public ScheduleRunner(String label){
 		super(label);
-		sc = new ScheduleCalc(new File("./data/setup.csv"));
+		sc = new ScheduleCalc(new File("./schedule_data/setup.csv"));
 		initComponents();
 		updateSchedule(sc, dateToSchedule, pastADay);
 	}
@@ -90,6 +94,7 @@ public class ScheduleRunner extends JFrame implements PropertyChangeListener{
         
         // Display Panel 
         JPanel gridPanel = createScheduleGrid(ScheduleCalc.TIMINGS);
+        gridPanel.setPreferredSize(new Dimension(900, 500));
         
         // Add the components
         schedulePanel.add(inputPanel);
@@ -154,41 +159,47 @@ public class ScheduleRunner extends JFrame implements PropertyChangeListener{
 		// Base Pane
 		JPanel inputPane = new JPanel();
 		inputPane.setLayout(new GridBagLayout());
-		//inputPane.setPreferredSize(new Dimension(width, 0));
+		inputPane.setPreferredSize(new Dimension(width, 20));
 		
 		// Parse
 		GridBagConstraints c = new GridBagConstraints();
 		dateFormat = new SimpleDateFormat("MM/dd/yyyy");
 		
-		c.insets = new Insets(5, 5, 5, 5);
+		c.insets = new Insets(1, 2, 1, 2);
+		c.fill = GridBagConstraints.BOTH;
+		c.weightx = 0.0;
+		c.weighty = 0.0;
 		
 		// x = 0
-		c.fill = GridBagConstraints.NONE;
 		c.gridx = 0;
 		c.gridy = 0;
-		inputPane.add(new JPanel(), c);
+		inputPane.add(new JLabel("Past A Day:"), c);
 		
-		c.fill = GridBagConstraints.NONE;
 		c.gridx = 0;
 		c.gridy = 1;
-		inputPane.add(new JPanel(), c);
+		inputPane.add(new JLabel("Date to Schedule:"), c);
 		
-		c.fill = GridBagConstraints.NONE;
 		c.gridx = 0;
 		c.gridy = 2;
 		c.gridwidth = 2;
-		inputPane.add(new JButton("Previous Week"), c);
-		
-		c.fill = GridBagConstraints.NONE;
-		c.gridx = 0;
-		c.gridy = 3;
-		c.gridwidth = 1;
-		c.gridheight = GridBagConstraints.REMAINDER;
-		inputPane.add(new JPanel(), c);
+		JButton prevButton = new JButton("Previous Week");
+		prevButton.addActionListener(new ActionListener() {
+ 
+            public void actionPerformed(ActionEvent e) {
+            	Calendar cal = GregorianCalendar.getInstance();
+            	cal.setTime(dateToSchedule);
+            	cal.add(Calendar.DATE, -7);
+            	dateToSchedule = cal.getTime();
+                dateField.setValue(dateToSchedule);
+                updateSchedule(sc, dateToSchedule, pastADay);
+            }
+
+        });  
+		inputPane.add(prevButton, c);
+	
 		
 		c.gridheight = 1;
 		// x = 1
-		c.fill = GridBagConstraints.NONE;
 		// PAD Field
 		padField = new JFormattedTextField(dateFormat);
 		try {
@@ -205,7 +216,6 @@ public class ScheduleRunner extends JFrame implements PropertyChangeListener{
 		c.gridwidth = 2;
 		inputPane.add(padField, c);
 		
-		c.fill = GridBagConstraints.NONE;
 		// Date Field
 		dateField = new JFormattedTextField(dateFormat);
 		try {
@@ -222,45 +232,71 @@ public class ScheduleRunner extends JFrame implements PropertyChangeListener{
 		c.gridwidth = 2;
 		inputPane.add(dateField, c);
 		
-		c.fill = GridBagConstraints.NONE;
-		c.gridx = 1;
-		c.gridy = 3;
-		c.gridwidth = 1;
-		c.gridheight = GridBagConstraints.REMAINDER;
-		inputPane.add(new JPanel(), c);
+	
 		
 		c.gridheight = 1;
 		// x = 2
-		c.fill = GridBagConstraints.NONE;
 		c.gridx = 2;
 		c.gridy = 2;
 		c.gridwidth = 2;
-		inputPane.add(new JButton("Next Week"), c);
+		JButton nextButton = new JButton("Next Week");
+		nextButton.addActionListener(new ActionListener() {
+ 
+            public void actionPerformed(ActionEvent e) {
+            	Calendar cal = GregorianCalendar.getInstance();
+            	cal.setTime(dateToSchedule);
+            	cal.add(Calendar.DATE, 7);
+            	dateToSchedule = cal.getTime();
+                dateField.setValue(dateToSchedule);
+                updateSchedule(sc, dateToSchedule, pastADay);
+            }
+
+        });  
+		inputPane.add(nextButton, c);
 		
-		c.fill = GridBagConstraints.NONE;
-		c.gridx = 2;
-		c.gridy = 3;
-		c.gridwidth = 1;
-		inputPane.add(new JPanel(), c);
+		
 		
 		// x = 3
-		c.fill = GridBagConstraints.NONE;
 		c.gridx = 3;
 		c.gridy = 0;
 		c.gridwidth = 1;
-		inputPane.add(new JButton("Reset"), c);
+		JButton defaultButton = new JButton("Default");
+		defaultButton.addActionListener(new ActionListener() {
+ 
+            public void actionPerformed(ActionEvent e) {
+            	try {
+					pastADay = dateFormat.parse("08/15/2013");
+					
+					padField.setValue(pastADay);
+	                updateSchedule(sc, dateToSchedule, pastADay);
+				} catch (ParseException e1) {
+					// TODO Auto-generated catch block
+					e1.printStackTrace();
+				}
+            }
+
+        });  
+		inputPane.add(defaultButton, c);
 		
-		c.fill = GridBagConstraints.NONE;
 		c.gridx = 3;
 		c.gridy = 1;
 		c.gridwidth = 1;
-		inputPane.add(new JButton("Reset"), c);
+		JButton currentButton = new JButton("This Week");
+		currentButton.addActionListener(new ActionListener() {
+ 
+            public void actionPerformed(ActionEvent e) {
+        		Calendar cal = GregorianCalendar.getInstance();
+				dateToSchedule = cal.getTime();
+				
+				dateField.setValue(dateToSchedule);
+                updateSchedule(sc, dateToSchedule, pastADay);
+            }
+
+        });  
+		inputPane.add(currentButton, c);
 		
-		c.fill = GridBagConstraints.NONE;
-		c.gridx = 3;
-		c.gridy = 3;
-		c.gridheight = GridBagConstraints.REMAINDER;
-		inputPane.add(new JPanel(), c);
+		
+		inputPane.setBorder(BorderFactory.createLineBorder(Color.black));
 
 		return inputPane;
 	}
