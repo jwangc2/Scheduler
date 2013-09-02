@@ -34,6 +34,7 @@ import javax.swing.border.Border;
 public class ScheduleRunner extends JFrame implements PropertyChangeListener{
 	
 	JLabel[][] displayLabels;
+	SimpleDateFormat dateFormat;
 	JFormattedTextField dateField;
 	JFormattedTextField padField;
 	Date dateToSchedule;
@@ -81,7 +82,7 @@ public class ScheduleRunner extends JFrame implements PropertyChangeListener{
         // Schedule Tab with BoxLayout (top to bottom)
         JPanel schedulePanel = new JPanel();
         schedulePanel.setLayout(new BoxLayout(schedulePanel, BoxLayout.Y_AXIS));
-        schedulePanel.setPreferredSize(new Dimension(900, 640));
+        schedulePanel.setPreferredSize(new Dimension(900, 600));
         
         // Input Panel
         JPanel inputPanel = createInputPane(900);
@@ -114,8 +115,14 @@ public class ScheduleRunner extends JFrame implements PropertyChangeListener{
 		int dayOfWeek = c.get(Calendar.DAY_OF_WEEK);
 		c.add(Calendar.DATE, (2 - dayOfWeek));
 		
+		int numDaySinceMon = sc.weekdaysFactor(pastADay, c.getTime());
+		
 		// Monday thru Friday
 		for (int i = 0; i < 5; i ++) {
+			displayLabels[9][i].setText(dateFormat.format(c.getTime()));
+			
+			int rotDay = ((numDaySinceMon + i) % 7) + 1;
+			displayLabels[10][i].setText("" + (char)((int)('A') + (rotDay - 1)));
 			
 			// Get the schedule for this day
 			HashMap<Integer, Integer> sched = sc.getSchedule(c.getTime(), pastADay);
@@ -124,10 +131,14 @@ public class ScheduleRunner extends JFrame implements PropertyChangeListener{
 				int period = entry.getValue();
 				
 				String displayText = "<html><div style=\'text-align: center;\'>" + sc.getClass(period);
-				if (block == 6) {
-					displayText += "<br>and Lunch";
+				if (period != ScheduleCalc.WEEKEND && period != ScheduleCalc.UNSCHEDULED) {
+					if (block == 6) {
+						displayText += "<br>and Lunch";
+					}
+					if (period != ScheduleCalc.BREAK && period != ScheduleCalc.ADV) {
+						displayText += "<br>" + ScheduleCalc.TIMING_TEXT[block][i];
+					}
 				}
-				displayText += "<br>" + ScheduleCalc.TIMING_TEXT[block][i];
 				displayText += "</div></html>";
 				
 				displayLabels[block][i].setText(displayText);
@@ -144,7 +155,7 @@ public class ScheduleRunner extends JFrame implements PropertyChangeListener{
 		inputPane.setPreferredSize(new Dimension(width, 75));
 		
 		// Date Field
-		SimpleDateFormat dateFormat = new SimpleDateFormat("MM/dd/yyyy");
+		dateFormat = new SimpleDateFormat("MM/dd/yyyy");
 		dateField = new JFormattedTextField(dateFormat);
 		try {
 			dateToSchedule = dateFormat.parse("08/29/2013");
@@ -238,8 +249,11 @@ public class ScheduleRunner extends JFrame implements PropertyChangeListener{
 					if (col == 4)
 						colors[row][col] = colBr;
 				}
-				else {
+				else if (row < 8) {
 					colors[row][col] = colClass;
+				}
+				else {
+					colors[row][col] = Color.white;
 				}
 				
 			}

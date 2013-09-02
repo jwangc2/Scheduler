@@ -33,20 +33,24 @@ public class ScheduleCalc {
 	
 	public final static BlockRange[][] TIMINGS = {
 		
-		{new BlockRange(1, 2, 30), new BlockRange(0, 2), new BlockRange(0, 3), new BlockRange(0, 2), new BlockRange(1, 2, 30)},
-		{new BlockRange(4, 5), new BlockRange(4, 5), new BlockRange(7, 8), new BlockRange(4, 8), new BlockRange(4, 5)},
-		{new BlockRange(14, 17), new BlockRange(14, 17), new BlockRange(16, 17), new BlockRange(16, 17), new BlockRange(14, 15)},
-		{new BlockRange(20, 21, 30), new BlockRange(20, 21, 30), new BlockRange(20, 21, 30), new BlockRange(20, 21, 30), new BlockRange(19, 21)},
+		{new BlockRange(4, 5, 30), new BlockRange(3, 5), new BlockRange(3, 6), new BlockRange(3, 5), new BlockRange(4, 5, 30)},
+		{new BlockRange(7, 8), new BlockRange(7, 8), new BlockRange(10, 11), new BlockRange(7, 11), new BlockRange(7, 8)},
+		{new BlockRange(17, 20), new BlockRange(17, 20), new BlockRange(19, 20), new BlockRange(19, 20), new BlockRange(17, 18)},
+		{new BlockRange(23, 24, 30), new BlockRange(23, 24, 30), new BlockRange(23, 24, 30), new BlockRange(23, 24, 30), new BlockRange(22, 24)},
 		
-		{new BlockRange(2, 4), new BlockRange(2, 4), new BlockRange(3, 7), new BlockRange(2, 4), new BlockRange(2, 4)},
-		{new BlockRange(5, 10), new BlockRange(5, 10), new BlockRange(8, 11), new BlockRange(8, 11), new BlockRange(5, 10)},
-		{new BlockRange(10, 14), new BlockRange(10, 14), new BlockRange(11, 16), new BlockRange(11, 16), new BlockRange(10, 14)},
-		{new BlockRange(17, 20), new BlockRange(17, 20), new BlockRange(17, 20), new BlockRange(17, 20), new BlockRange(15, 19)}
+		{new BlockRange(5, 7), new BlockRange(5, 7), new BlockRange(6, 10), new BlockRange(5, 7), new BlockRange(5, 7)},
+		{new BlockRange(8, 13), new BlockRange(8, 13), new BlockRange(11, 14), new BlockRange(11, 14), new BlockRange(8, 13)},
+		{new BlockRange(13, 17), new BlockRange(13, 17), new BlockRange(14, 19), new BlockRange(14, 19), new BlockRange(13, 17)},
+		{new BlockRange(20, 23), new BlockRange(20, 23), new BlockRange(20, 23), new BlockRange(20, 23), new BlockRange(18, 22)},
 		
-		//{new BlockRange(0, 1), null, null, null, new BlockRange(0, 1)}
+		{new BlockRange(0, 1), new BlockRange(0, 1), new BlockRange(0, 1), new BlockRange(0, 1), new BlockRange(0, 1)},
+		{new BlockRange(1, 2), new BlockRange(1, 2), new BlockRange(1, 2), new BlockRange(1, 2), new BlockRange(1, 2)},
+		{new BlockRange(2, 3), new BlockRange(2, 3), new BlockRange(2, 3), new BlockRange(2, 3), new BlockRange(2, 3)}
+
 	};
 	
 	public final static String[][] TIMING_TEXT = {
+		
 		{"(8:00-8:30)", "(7:45-8:30)", "(7:45-9:00)", "(7:45-8:30)", "(8:00-8:30)"},
 		{"(9:40-9:55)", "(9:40-9:55)", "(10:10-10:25)", "(9:40-10:25)", "(9:40-9:55)"},
 		{"(1:10-1:50)", "(1:10-1:50)", "(1:40-1:50)", "(1:40-1:50)", "(1:10-1:20)"},
@@ -55,10 +59,15 @@ public class ScheduleCalc {
 		{"(8:30-9:40)", "(8:30-9:40)", "(9:00-10:10)", "(8:30-9:40)", "(8:30-9:40)"},
 		{"(9:55-11:05)", "(9:55-11:05)", "(10:25-11:35)", "(10:25-11:35)", "(9:55-11:05)"},
 		{"(11:05-1:10)", "(11:05-1:10)", "(11:35-1:40)", "(11:35-1:40)", "(11:05-1:10)"},
-		{"(1:50-3:00)", "(1:50-3:00)", "(1:50-3:00)", "(1:50-3:00)", "(1:20-2:30)"}
+		{"(1:50-3:00)", "(1:50-3:00)", "(1:50-3:00)", "(1:50-3:00)", "(1:20-2:30)"},
+		
+		{"Monday", "Tuesday", "Wednesday", "Thursday", "Friday"},
+		{"Date", "Date", "Date", "Date", "Date"},
+		{"A", "B", "C", "D", "E"}
 	};
 	
 	public final static String[] TIMING_ROWS = {
+		"Day", "Date", "Rot. Day",
 		"7:45","8:00","8:30","9:00",
 		"9:40","9:55","10:00","10:10",
 		"10:25","11:00","11:05","11:35",
