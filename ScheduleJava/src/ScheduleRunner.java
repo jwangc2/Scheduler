@@ -73,13 +73,6 @@ public class ScheduleRunner extends JFrame implements PropertyChangeListener{
         Container container = getContentPane();
         container.setLayout(new FlowLayout(FlowLayout.LEADING, 4, 4));
         setComponentOrientation(ComponentOrientation.LEFT_TO_RIGHT);
-
-        //Create the menu bar.  Make it have a green background.
-        JMenuBar greenMenuBar = new JMenuBar();
-        greenMenuBar.setOpaque(true);
-        greenMenuBar.setBackground(new Color(154, 165, 127));
-        greenMenuBar.setPreferredSize(new Dimension(900, 20));
-        
         
         //room / object tabs
         JTabbedPane controlPane = new JTabbedPane();
@@ -87,7 +80,7 @@ public class ScheduleRunner extends JFrame implements PropertyChangeListener{
         // Schedule Tab with BoxLayout (top to bottom)
         JPanel schedulePanel = new JPanel();
         schedulePanel.setLayout(new BoxLayout(schedulePanel, BoxLayout.Y_AXIS));
-        schedulePanel.setPreferredSize(new Dimension(900, 720));
+        schedulePanel.setPreferredSize(new Dimension(900, 640));
         
         // Input Panel
         JPanel inputPanel = createInputPane(900);
@@ -104,7 +97,6 @@ public class ScheduleRunner extends JFrame implements PropertyChangeListener{
         controlPane.addTab("Schedule", schedulePanel);
         
         //Set the menu bar and add the label to the content pane.
-        setJMenuBar(greenMenuBar);
         container.add(controlPane, BorderLayout.CENTER);
 
         //Display the window.
@@ -159,7 +151,7 @@ public class ScheduleRunner extends JFrame implements PropertyChangeListener{
 		// Base Pane
 		JPanel inputPane = new JPanel();
 		inputPane.setLayout(new GridBagLayout());
-		inputPane.setPreferredSize(new Dimension(width, 20));
+		inputPane.setPreferredSize(new Dimension(width, 80));
 		
 		// Parse
 		GridBagConstraints c = new GridBagConstraints();
