@@ -1,12 +1,10 @@
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.Calendar;
 import java.util.GregorianCalendar;
 import java.util.HashMap;
-import java.util.Map;
 import java.util.Scanner;
 
 
@@ -143,6 +141,8 @@ public class ScheduleCalc {
 				
 				csv.close();
 			}
+			
+			sc.close();
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -215,7 +215,6 @@ public class ScheduleCalc {
 				int thisPeriod = ((firstPeriod + i - 1) % 7) + 1;
 				
 				// Check if this is a lab free
-				System.out.println("Period: " + thisPeriod + " | Rot: " + rotDay);
 				if (labFrees[thisPeriod - 1][rotDay - 1]) {
 					thisPeriod = ScheduleCalc.LAB_FREE;
 				}
