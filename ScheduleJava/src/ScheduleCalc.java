@@ -1,4 +1,8 @@
+import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -81,12 +85,16 @@ public class ScheduleCalc {
 	private String[] classes;
 	private boolean[][] labFrees;
 	private ArrayList<Date> holidays;
+	private Date defaultPad;
+	private SimpleDateFormat formatter;
 	
 	public ScheduleCalc() {
 		initSchedule();
 		
 		labFrees = new boolean[7][7];
 		holidays = new ArrayList<Date>();
+		defaultPad = new Date();
+		formatter = new SimpleDateFormat("MM/dd/yyyy");
 	}
 	
 	public ScheduleCalc(File setup) {
@@ -95,8 +103,6 @@ public class ScheduleCalc {
 		
 		// Try to load and parse
 		try {
-			// Default date format
-			SimpleDateFormat formatter = new SimpleDateFormat("MM/dd/yyyy");;
 			
 			Scanner sc = new Scanner(setup);
 			int currentLine = 0;
@@ -132,9 +138,14 @@ public class ScheduleCalc {
 						formatter = new SimpleDateFormat(nextValue);
 						break;
 					}
-					else if (currentLine > 9) {                        									// Holidays
+					else if (currentLine == 10) {
+						defaultPad = formatter.parse(nextValue);
+						break;
+					}
+					else if (currentLine > 11) {                        									// Holidays
 						Date thisDate = formatter.parse(nextValue);
-						holidays.add(thisDate);
+						if (thisDate != null)
+							holidays.add(thisDate);
 						break;
 					}
 				}
@@ -175,53 +186,60 @@ public class ScheduleCalc {
 	public HashMap<Integer, Integer> getSchedule(Date dateToSchedule, Date pastADay) {
 		HashMap<Integer, Integer> schedule = new HashMap<Integer, Integer>();
 		
-		Date dateToUse = dateToSchedule;
-		if (dateToSchedule.before(pastADay))
-			dateToUse = pastADay;
-		
-		// Get the rotation day
-		int rotDay = (weekdaysFactor(pastADay, dateToUse) % 7) + 1;
-		
-		// Get the day of the week
-		Calendar c = GregorianCalendar.getInstance();
-		c.setTime(dateToUse);
-		int dayOfWeek = c.get(Calendar.DAY_OF_WEEK);
-		
-		
-		if (dayOfWeek == Calendar.SATURDAY || dayOfWeek == Calendar.SUNDAY) {			// Check for weekend
-			for (int i = 0; i < 8; i ++)
-				schedule.put(i, ScheduleCalc.WEEKEND);
-		}
-		
-		else if (holidays.contains(dateToUse)) {                        			// Check for holidays
-			for (int i = 0; i < 8; i ++)
-				schedule.put(i,  ScheduleCalc.UNSCHEDULED);
-		}
-		else {                                                               			// This was proper input
-			
-		
-			// Determine what period the first block of this day should be
-			int firstPeriod = ((4 * (rotDay - 1)) % 7) + 1;
-			
-			
-			// Loop through each interjection block
-			for (int i = 0; i < 4; i ++) {
-				schedule.put(i, ScheduleCalc.INTERJECTIONS[i][dayOfWeek - 2]);
+		if (dateToSchedule.before(pastADay)) {
+			for (int i = 0; i < 8; i ++) {
+				schedule.put(i, ScheduleCalc.UNSCHEDULED);
 			}
-
-			// Loop through each class block
-			for (int i = 0; i < 4; i ++) {
-				// Get this period based on the first block
-				int thisPeriod = ((firstPeriod + i - 1) % 7) + 1;
+		}
+		
+		else {
+			
+		
+			
+			// Get the rotation day
+			int rotDay = (weekdaysFactor(pastADay, dateToSchedule) % 7) + 1;
+			
+			// Get the day of the week
+			Calendar c = GregorianCalendar.getInstance();
+			c.setTime(dateToSchedule);
+			int dayOfWeek = c.get(Calendar.DAY_OF_WEEK);
+			
+			
+			if (dayOfWeek == Calendar.SATURDAY || dayOfWeek == Calendar.SUNDAY) {			// Check for weekend
+				for (int i = 0; i < 8; i ++)
+					schedule.put(i, ScheduleCalc.WEEKEND);
+			}
+			
+			else if (holidays.contains(dateToSchedule)) {                        			// Check for holidays
+				for (int i = 0; i < 8; i ++)
+					schedule.put(i,  ScheduleCalc.UNSCHEDULED);
+			}
+			else {                                                               			// This was proper input
 				
-				// Check if this is a lab free
-				if (labFrees[thisPeriod - 1][rotDay - 1]) {
-					thisPeriod = ScheduleCalc.LAB_FREE;
+			
+				// Determine what period the first block of this day should be
+				int firstPeriod = ((4 * (rotDay - 1)) % 7) + 1;
+				
+				
+				// Loop through each interjection block
+				for (int i = 0; i < 4; i ++) {
+					schedule.put(i, ScheduleCalc.INTERJECTIONS[i][dayOfWeek - 2]);
 				}
-				schedule.put(i + 4, thisPeriod);
+	
+				// Loop through each class block
+				for (int i = 0; i < 4; i ++) {
+					// Get this period based on the first block
+					int thisPeriod = ((firstPeriod + i - 1) % 7) + 1;
+					
+					// Check if this is a lab free
+					if (labFrees[thisPeriod - 1][rotDay - 1]) {
+						thisPeriod = ScheduleCalc.LAB_FREE;
+					}
+					schedule.put(i + 4, thisPeriod);
+				}
+				
+				
 			}
-			
-			
 		}
 		
 //		for (Map.Entry<Integer, Integer> entry : schedule.entrySet()) {
@@ -281,12 +299,75 @@ public class ScheduleCalc {
 	    return (int) (daysWithoutSunday-w1+w2);
 	}
 	
+	public void export(String path) {
+		try {
+			BufferedWriter bw = new BufferedWriter(new FileWriter(path));
+			
+			System.out.println("classes");
+			// Write yo classes
+			for (int i = 1; i <= 7; i ++) {
+				String toWrite = classes[i];
+				if (i < 7)
+					toWrite += ",";
+				bw.write(toWrite);
+			}
+			bw.newLine();
+			
+			// Write yo lab frees
+			for (int i = 0; i < labFrees.length; i ++) {
+				String toWrite = "";
+				for (int n = 0; n < labFrees[i].length; n ++) {
+					if (labFrees[i][n]) {
+						toWrite += (char)((int)('A') + n) + ',';
+					}
+				}
+				
+				if (toWrite != "")
+					toWrite = toWrite.substring(0, toWrite.length() - 1);
+				
+				bw.write(toWrite);
+				bw.newLine();
+			}
+			
+			// Our date pattern
+			bw.write(formatter.toPattern());
+			bw.newLine();
+			
+			// Our default past a day
+			bw.write(formatter.format(defaultPad));
+			bw.newLine();
+			bw.newLine();
+			
+			// Holidays
+			for (int i = 0; i < holidays.size(); i ++) {
+				bw.write(formatter.format(holidays.get(i)));
+				if (i < holidays.size() - 1)
+					bw.newLine();
+			}
+			
+			// Update
+			bw.flush();
+			bw.close();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+	
 	// Getters
 	public ArrayList<Date> getHolidays() {
 		return holidays;
 	}
 	
+	public boolean isHoliday(Date date) {
+		return (holidays.contains(date));
+	}
+	
 	public String getClass(int period) {
 		return classes[period];
+	}
+	
+	public Date getDefaultPad() {
+		return defaultPad;
 	}
 }

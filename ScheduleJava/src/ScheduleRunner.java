@@ -62,9 +62,12 @@ public class ScheduleRunner extends JFrame implements PropertyChangeListener{
 	
 	public ScheduleRunner(String label){
 		super(label);
-		sc = new ScheduleCalc(new File("./schedule_data/setup.csv"));
+		sc = new ScheduleCalc(new File("./schedule_data/setup_save.csv"));
 		initComponents();
 		updateSchedule(sc, dateToSchedule, pastADay);
+		
+		//ScheduleCalc s = new ScheduleCalc();
+		//s.export("./schedule_data/setup2.csv");
 	}
 	
 	private void initComponents() {
@@ -117,10 +120,6 @@ public class ScheduleRunner extends JFrame implements PropertyChangeListener{
 		
 		// Monday thru Friday
 		for (int i = 0; i < 5; i ++) {
-			displayLabels[9][i].setText(dateFormat.format(c.getTime()));
-			
-			int rotDay = ((numDaySinceMon + i) % 7) + 1;
-			displayLabels[10][i].setText("" + (char)((int)('A') + (rotDay - 1)));
 			
 			// Get the schedule for this day
 			HashMap<Integer, Integer> sched = sc.getSchedule(c.getTime(), pastADay);
@@ -141,6 +140,16 @@ public class ScheduleRunner extends JFrame implements PropertyChangeListener{
 				
 				displayLabels[block][i].setText(displayText);
 			}
+			
+			// Headers
+			displayLabels[9][i].setText(dateFormat.format(c.getTime()));
+			
+			int rotDay = ((numDaySinceMon + i) % 7) + 1;
+			String letDay = "-";
+			if (!c.getTime().before(pastADay) && !sc.isHoliday(c.getTime()))
+				letDay = "" + (char)((int)('A') + (rotDay - 1));
+			
+			displayLabels[10][i].setText(letDay);
 			
 			// Move onto the next day
 			c.add(Calendar.DATE, 1);
@@ -195,7 +204,10 @@ public class ScheduleRunner extends JFrame implements PropertyChangeListener{
 		// PAD Field
 		padField = new JFormattedTextField(dateFormat);
 		try {
-			pastADay = dateFormat.parse("08/15/2013");
+			pastADay = sc.getDefaultPad();
+			if (pastADay == null)
+				pastADay = dateFormat.parse("08/15/2013");
+				
 			padField.setValue(pastADay);
 		} catch (ParseException e) {
 			// TODO Auto-generated catch block
