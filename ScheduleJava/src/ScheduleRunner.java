@@ -12,10 +12,8 @@ import java.awt.event.ActionListener;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.io.File;
-import java.text.NumberFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.GregorianCalendar;
@@ -28,7 +26,6 @@ import javax.swing.JButton;
 import javax.swing.JFormattedTextField;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
-import javax.swing.JMenuBar;
 import javax.swing.JPanel;
 import javax.swing.JTabbedPane;
 import javax.swing.SwingConstants;
@@ -62,7 +59,7 @@ public class ScheduleRunner extends JFrame implements PropertyChangeListener{
 	
 	public ScheduleRunner(String label){
 		super(label);
-		sc = new ScheduleCalc(new File("./schedule_data/setup_save.csv"));
+		sc = new ScheduleCalc(new File("./schedule_data/setup.csv"));
 		initComponents();
 		updateSchedule(sc, dateToSchedule, pastADay);
 		
@@ -387,39 +384,7 @@ public class ScheduleRunner extends JFrame implements PropertyChangeListener{
 		
 		return createGridBagPane(blockRanges, ScheduleCalc.TIMING_TEXT, colors, ScheduleCalc.TIMING_ROWS, displayLabels);
 	}
-	
-	// Default grid pane
-	private JPanel createGridBagPane(BlockRange[][] blockRanges) {
-		
-		// Use the positions as text
-		String[][] text = new String[blockRanges.length][blockRanges[0].length];
-		for (int i = 0; i < text.length ; i ++) {
-			for (int n = 0; n < text[i].length; n ++) {
-				text[i][n] = "(" + (n + 1) + ", " + i + ")";
-			}
-		}
-		
-		// Use all cyan
-		Color[][] colors = new Color[blockRanges.length][blockRanges[0].length];
-		for (Color[] row : colors)
-			Arrays.fill(row, Color.cyan);
-		
-		return createGridBagPane(blockRanges, text, colors, new String[maxGridBagRows(blockRanges)], new JLabel[blockRanges.length][blockRanges[0].length]);
-	}
-	
-	private int maxGridBagRows(BlockRange[][] blockRanges) {
-		int maxRow = 0;
-		
-		for (BlockRange[] br : blockRanges) {
-			for (BlockRange b : br) {
-				if (b.end > maxRow)
-					maxRow = b.end;
-			}
-		}
-		
-		return maxRow;
-	}
-	
+
 	// General grid pane creator
 	private JPanel createGridBagPane(BlockRange[][] blockRanges, String[][] text, Color[][] colors, String[] sideText, JLabel[][] references) {
 		
