@@ -277,8 +277,12 @@ public class ScheduleRunner extends JFrame implements PropertyChangeListener{
 		currentButton.addActionListener(new ActionListener() {
  
             public void actionPerformed(ActionEvent e) {
-        		Calendar cal = GregorianCalendar.getInstance();
-				dateToSchedule = cal.getTime();
+				try {
+					dateToSchedule = dateFormat.parse(dateFormat.format(new Date()));
+				} catch (ParseException e1) {
+					// TODO Auto-generated catch block
+					e1.printStackTrace();
+				}
 				
 				dateField.setValue(dateToSchedule);
                 updateSchedule(sc, dateToSchedule, pastADay);
