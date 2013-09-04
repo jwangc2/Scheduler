@@ -282,13 +282,9 @@ public class ScheduleRunner extends JFrame implements PropertyChangeListener{
 		
 		// Date Field
 		dateField = new JFormattedTextField(dateFormat);
-		try {
-			dateToSchedule = dateFormat.parse("08/29/2013");
-			dateField.setValue(dateToSchedule);
-		} catch (ParseException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
+	
+		dateToSchedule = ScheduleCalc.getZeroedDate(new Date());
+		dateField.setValue(dateToSchedule);
 		dateField.setColumns(10);
 		dateField.addPropertyChangeListener("value", this);
 		c.gridx = 1;
