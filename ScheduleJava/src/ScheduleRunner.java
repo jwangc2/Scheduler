@@ -12,6 +12,7 @@ import java.awt.event.ActionListener;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
@@ -26,6 +27,7 @@ import javax.swing.JButton;
 import javax.swing.JFormattedTextField;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JTabbedPane;
 import javax.swing.SwingConstants;
@@ -43,6 +45,29 @@ public class ScheduleRunner extends JFrame implements PropertyChangeListener{
 	
 	ScheduleCalc sc;
 	
+	Border blackLines = BorderFactory.createLineBorder(Color.black);
+	Border hiliteLines = BorderFactory.createLineBorder(new Color(224, 42, 42));
+	Border labelPadding = BorderFactory.createEmptyBorder(0, 10, 0, 10);
+	Border blackPaddedLines = BorderFactory.createCompoundBorder(blackLines, labelPadding);
+	Border hilitePaddedLines = BorderFactory.createCompoundBorder(hiliteLines, labelPadding);
+	
+	// Use specific colors
+	private Color colFac = new Color(216, 228, 188);
+	private Color colOH = new Color(246, 196, 122);
+	private Color colBr = Color.white;
+	private Color colAs = new Color(197, 217, 241);
+	private Color colClass = new Color(249, 246, 181);
+	private Color colLabFree = new Color(255, 214, 178);
+	private Color colUnsched = new Color(240, 240, 240);
+	
+	private Color[] colorScheme = {
+			colBr, 
+			colClass, colClass, colClass, colClass, colClass, colClass, colClass,
+			colLabFree, colOH, colBr, colAs, colBr,
+			colFac, colFac,
+			colAs, colUnsched
+	};
+	
 	public static void main(String[] args) {
         //Schedule a job for the event-dispatching thread:
         //creating and showing this application's GUI.
@@ -59,12 +84,23 @@ public class ScheduleRunner extends JFrame implements PropertyChangeListener{
 	
 	public ScheduleRunner(String label){
 		super(label);
-		sc = new ScheduleCalc(new File("./schedule_data/setup.csv"));
-		initComponents();
-		updateSchedule(sc, dateToSchedule, pastADay);
 		
-		//ScheduleCalc s = new ScheduleCalc();
-		//s.export("./schedule_data/setup2.csv");
+		// Attempt to load the setup file. Otherwise use the broken default one.
+		try {
+			sc = new ScheduleCalc(new File("./schedule_data/setup.csv"));
+		} catch (FileNotFoundException e) {
+			JOptionPane.showMessageDialog(this, "You have no setup file!\nYou might be missing unscheduled days!");
+			sc = new ScheduleCalc();
+		} catch (ParseException e) {
+			JOptionPane.showMessageDialog(this, "Corrupted setup file. Get a new one.");
+			sc = new ScheduleCalc();
+		}
+		
+		// Create our components and add them to this frame
+		initComponents();
+		
+		// Get a schedule on the board
+		updateSchedule(sc, dateToSchedule, pastADay);
 	}
 	
 	private void initComponents() {
@@ -109,21 +145,35 @@ public class ScheduleRunner extends JFrame implements PropertyChangeListener{
 		
 		// Set the calendar to the Monday of the dateToSchedule
 		Calendar c = GregorianCalendar.getInstance();
+		
+		c.set(Calendar.HOUR_OF_DAY, 0);
+	    c.set(Calendar.MINUTE, 0);
+	    c.set(Calendar.SECOND, 0);
+	    c.set(Calendar.MILLISECOND, 0);
+	    
+	    Date todayDate = c.getTime();
+		
 		c.setTime(dateToSchedule);
 		int dayOfWeek = c.get(Calendar.DAY_OF_WEEK);
 		c.add(Calendar.DATE, (2 - dayOfWeek));
 		
-		int numDaySinceMon = sc.weekdaysFactor(pastADay, c.getTime());
-		
 		// Monday thru Friday
 		for (int i = 0; i < 5; i ++) {
 			
+			c.set(Calendar.HOUR_OF_DAY, 0);
+		    c.set(Calendar.MINUTE, 0);
+		    c.set(Calendar.SECOND, 0);
+		    c.set(Calendar.MILLISECOND, 0);
+		    
+		    Date thisDate = c.getTime();
+			
 			// Get the schedule for this day
-			HashMap<Integer, Integer> sched = sc.getSchedule(c.getTime(), pastADay);
+			HashMap<Integer, Integer> sched = sc.getSchedule(thisDate, pastADay);
 			for (Map.Entry<Integer, Integer> entry : sched.entrySet()) {
 				int block = entry.getKey();
 				int period = entry.getValue();
 				
+				// Change the label text
 				String displayText = "<html><div style=\'text-align: center;\'>" + sc.getClass(period);
 				if (period != ScheduleCalc.WEEKEND && period != ScheduleCalc.UNSCHEDULED) {
 					if (block == 6) {
@@ -136,12 +186,26 @@ public class ScheduleRunner extends JFrame implements PropertyChangeListener{
 				displayText += "</div></html>";
 				
 				displayLabels[block][i].setText(displayText);
+				
+				// Change the label color
+				Color labelColor = colorScheme[period];
+				
+				if (!thisDate.before(dateToSchedule) && !thisDate.after(dateToSchedule)) {
+					float[] hsv = new float[3];
+					Color.RGBtoHSB(labelColor.getRed(), labelColor.getGreen(), labelColor.getBlue(), hsv);
+					if (hsv[1] > 0.01)
+						hsv[1] += 0.3;
+					labelColor = Color.getHSBColor(hsv[0], hsv[1], hsv[2]);
+				}
+				
+				displayLabels[block][i].setBackground(labelColor);
 			}
 			
-			// Headers
+			// Date
 			displayLabels[9][i].setText(dateFormat.format(c.getTime()));
 			
-			int rotDay = ((numDaySinceMon + i) % 7) + 1;
+			// Letter Day
+			int rotDay = (sc.weekdaysFactor(pastADay, c.getTime()) % 7) + 1;
 			String letDay = "-";
 			if (!c.getTime().before(pastADay) && !sc.isHoliday(c.getTime()))
 				letDay = "" + (char)((int)('A') + (rotDay - 1));
@@ -328,55 +392,12 @@ public class ScheduleRunner extends JFrame implements PropertyChangeListener{
 			}
 		}
 		
-		// Use specific colors
-		Color colFac = new Color(216, 228, 188);
-		Color colOH = new Color(246, 196, 122);
-		Color colBr = Color.white;
-		Color colAs = new Color(197, 217, 241);
-		Color colClass = new Color(249, 246, 181);
-		
 		Color[][] colors = new Color[blockRanges.length][blockRanges[0].length];
 		for (int row = 0; row < blockRanges.length; row ++) {
 			for (int col = 0; col < blockRanges[row].length; col ++) {
-				if (row == 0) {
-					// Faculty as default
-					colors[row][col] = colFac;
-					
-					// Office hours as orange
-					if (col == 0 || col == 4)
-						colors[row][col] = colOH;
-				}
-				else if (row == 1) {
-					// Break as white
-					colors[row][col] = colBr;	
-					
-					// Assembly as blue
-					if (col == 3)
-						colors[row][col] = colAs;
-				}
-				else if (row == 2) {
-					// Break as white
-					colors[row][col] = colBr;	
-					
-					// Advisement as blue
-					if (col == 0 || col == 1)
-						colors[row][col] = colAs;
-				}
-				else if (row == 3) {
-					// Office hours as orange
-					colors[row][col] = colOH;
-					
-					// Weekend as white
-					if (col == 4)
-						colors[row][col] = colBr;
-				}
-				else if (row < 8) {
-					colors[row][col] = colClass;
-				}
-				else {
-					colors[row][col] = Color.white;
-				}
-				
+				colors[row][col] = Color.white;
+				if (row == 11)
+					colors[row][col] = colUnsched;
 			}
 		}
 		
@@ -387,8 +408,6 @@ public class ScheduleRunner extends JFrame implements PropertyChangeListener{
 
 	// General grid pane creator
 	private JPanel createGridBagPane(BlockRange[][] blockRanges, String[][] text, Color[][] colors, String[] sideText, JLabel[][] references) {
-		
-		Border blackLines = BorderFactory.createLineBorder(Color.black);
 		
 		// Panel and Layout
 		JPanel gridBagPane = new JPanel();
@@ -436,14 +455,14 @@ public class ScheduleRunner extends JFrame implements PropertyChangeListener{
 			}
 		}
 		
-		Border padding = BorderFactory.createEmptyBorder(0, 10, 0, 10);
+		
 		
 		// Append rows so that height requests are accepted
 		for (int i = 0; i < maxRow; i ++) {
 			// Create the label
 			JLabel thisLabel = new JLabel(sideText[i]);
 			thisLabel.setBackground(Color.white);
-			thisLabel.setBorder(BorderFactory.createCompoundBorder(blackLines, padding));
+			thisLabel.setBorder(BorderFactory.createCompoundBorder(blackLines, labelPadding));
 			thisLabel.setOpaque(true);
 			
 			// Basic 1 x 1 Cells

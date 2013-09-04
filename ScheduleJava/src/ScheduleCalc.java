@@ -1,7 +1,9 @@
 import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -96,12 +98,12 @@ public class ScheduleCalc {
 		formatter = new SimpleDateFormat("MM/dd/yyyy");
 	}
 	
-	public ScheduleCalc(File setup) {
+	public ScheduleCalc(File setup) throws FileNotFoundException, ParseException {
 		// Ensure that the members are initiated
 		this();
 		
 		// Try to load and parse
-		try {
+		{
 			
 			Scanner sc = new Scanner(setup);
 			int currentLine = 0;
@@ -153,9 +155,6 @@ public class ScheduleCalc {
 			}
 			
 			sc.close();
-		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
 		}
 	}
 	
@@ -298,8 +297,8 @@ public class ScheduleCalc {
 	    return (int) (daysWithoutSunday-w1+w2);
 	}
 	
-	public void export(String path) {
-		try {
+	public void export(String path) throws IOException {
+		{
 			BufferedWriter bw = new BufferedWriter(new FileWriter(path));
 			
 			System.out.println("classes");
@@ -347,9 +346,6 @@ public class ScheduleCalc {
 			// Update
 			bw.flush();
 			bw.close();
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
 		}
 	}
 	
