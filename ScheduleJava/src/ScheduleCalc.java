@@ -192,8 +192,6 @@ public class ScheduleCalc {
 		
 		else {
 			
-		
-			
 			// Get the rotation day
 			int rotDay = (weekdaysFactor(pastADay, dateToSchedule) % 7) + 1;
 			
@@ -364,5 +362,18 @@ public class ScheduleCalc {
 	
 	public Date getDefaultPad() {
 		return defaultPad;
+	}
+	
+	// Static class functions
+	public static Date getZeroedDate(Date d) {
+		Calendar c = GregorianCalendar.getInstance();
+		
+		c.setTime(d);
+		c.set(Calendar.HOUR_OF_DAY, 0);
+	    c.set(Calendar.MINUTE, 0);
+	    c.set(Calendar.SECOND, 0);
+	    c.set(Calendar.MILLISECOND, 0);
+	    
+	    return c.getTime();
 	}
 }

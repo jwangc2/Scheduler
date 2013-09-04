@@ -146,26 +146,14 @@ public class ScheduleRunner extends JFrame implements PropertyChangeListener{
 		// Set the calendar to the Monday of the dateToSchedule
 		Calendar c = GregorianCalendar.getInstance();
 		
-		c.set(Calendar.HOUR_OF_DAY, 0);
-	    c.set(Calendar.MINUTE, 0);
-	    c.set(Calendar.SECOND, 0);
-	    c.set(Calendar.MILLISECOND, 0);
-	    
-	    Date todayDate = c.getTime();
-		
 		c.setTime(dateToSchedule);
 		int dayOfWeek = c.get(Calendar.DAY_OF_WEEK);
 		c.add(Calendar.DATE, (2 - dayOfWeek));
 		
 		// Monday thru Friday
 		for (int i = 0; i < 5; i ++) {
-			
-			c.set(Calendar.HOUR_OF_DAY, 0);
-		    c.set(Calendar.MINUTE, 0);
-		    c.set(Calendar.SECOND, 0);
-		    c.set(Calendar.MILLISECOND, 0);
 		    
-		    Date thisDate = c.getTime();
+		    Date thisDate = ScheduleCalc.getZeroedDate(c.getTime());
 			
 			// Get the schedule for this day
 			HashMap<Integer, Integer> sched = sc.getSchedule(thisDate, pastADay);
@@ -243,9 +231,9 @@ public class ScheduleRunner extends JFrame implements PropertyChangeListener{
 		
 		c.gridx = 0;
 		c.gridy = 2;
-		c.gridwidth = 2;
-		JButton prevButton = new JButton("Previous Week");
-		prevButton.addActionListener(new ActionListener() {
+		c.gridwidth = 1;
+		JButton prevWeekButton = new JButton("Prev. Week");
+		prevWeekButton.addActionListener(new ActionListener() {
  
             public void actionPerformed(ActionEvent e) {
             	Calendar cal = GregorianCalendar.getInstance();
@@ -257,29 +245,40 @@ public class ScheduleRunner extends JFrame implements PropertyChangeListener{
             }
 
         });  
-		inputPane.add(prevButton, c);
+		inputPane.add(prevWeekButton, c);
 	
 		
 		c.gridheight = 1;
 		// x = 1
 		// PAD Field
 		padField = new JFormattedTextField(dateFormat);
-		try {
-			pastADay = sc.getDefaultPad();
-			if (pastADay == null)
-				pastADay = dateFormat.parse("08/15/2013");
-				
-			padField.setValue(pastADay);
-		} catch (ParseException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
+		pastADay = sc.getDefaultPad();
+		padField.setValue(pastADay);
+	
 		padField.setColumns(10);
 		padField.addPropertyChangeListener("value", this);
 		c.gridx = 1;
 		c.gridy = 0;
 		c.gridwidth = 2;
 		inputPane.add(padField, c);
+		
+		JButton prevDayButton = new JButton("Prev. Day");
+		prevDayButton.addActionListener(new ActionListener() {
+			 
+            public void actionPerformed(ActionEvent e) {
+            	Calendar cal = GregorianCalendar.getInstance();
+            	cal.setTime(dateToSchedule);
+            	cal.add(Calendar.DATE, -1);
+            	dateToSchedule = cal.getTime();
+                dateField.setValue(dateToSchedule);
+                updateSchedule(sc, dateToSchedule, pastADay);
+            }
+
+        });  
+		c.gridx = 1;
+		c.gridy = 2;
+		c.gridwidth = 1;
+		inputPane.add(prevDayButton, c);
 		
 		// Date Field
 		dateField = new JFormattedTextField(dateFormat);
@@ -301,25 +300,23 @@ public class ScheduleRunner extends JFrame implements PropertyChangeListener{
 		
 		c.gridheight = 1;
 		// x = 2
-		c.gridx = 2;
-		c.gridy = 2;
-		c.gridwidth = 2;
-		JButton nextButton = new JButton("Next Week");
-		nextButton.addActionListener(new ActionListener() {
- 
+		JButton nextDayButton = new JButton("Next Day");
+		nextDayButton.addActionListener(new ActionListener() {
+			 
             public void actionPerformed(ActionEvent e) {
             	Calendar cal = GregorianCalendar.getInstance();
             	cal.setTime(dateToSchedule);
-            	cal.add(Calendar.DATE, 7);
+            	cal.add(Calendar.DATE, 1);
             	dateToSchedule = cal.getTime();
                 dateField.setValue(dateToSchedule);
                 updateSchedule(sc, dateToSchedule, pastADay);
             }
 
         });  
-		inputPane.add(nextButton, c);
-		
-		
+		c.gridx = 2;
+		c.gridy = 2;
+		c.gridwidth = 1;
+		inputPane.add(nextDayButton, c);
 		
 		// x = 3
 		c.gridx = 3;
@@ -346,23 +343,35 @@ public class ScheduleRunner extends JFrame implements PropertyChangeListener{
 		c.gridx = 3;
 		c.gridy = 1;
 		c.gridwidth = 1;
-		JButton currentButton = new JButton("This Week");
+		JButton currentButton = new JButton("Today");
 		currentButton.addActionListener(new ActionListener() {
  
             public void actionPerformed(ActionEvent e) {
-				try {
-					dateToSchedule = dateFormat.parse(dateFormat.format(new Date()));
-				} catch (ParseException e1) {
-					// TODO Auto-generated catch block
-					e1.printStackTrace();
-				}
-				
+				dateToSchedule = ScheduleCalc.getZeroedDate(new Date());
 				dateField.setValue(dateToSchedule);
                 updateSchedule(sc, dateToSchedule, pastADay);
             }
 
         });  
 		inputPane.add(currentButton, c);
+		
+		c.gridx = 3;
+		c.gridy = 2;
+		c.gridwidth = 1;
+		JButton nextWeekButton = new JButton("Next Week");
+		nextWeekButton.addActionListener(new ActionListener() {
+ 
+            public void actionPerformed(ActionEvent e) {
+            	Calendar cal = GregorianCalendar.getInstance();
+            	cal.setTime(dateToSchedule);
+            	cal.add(Calendar.DATE, 7);
+            	dateToSchedule = cal.getTime();
+                dateField.setValue(dateToSchedule);
+                updateSchedule(sc, dateToSchedule, pastADay);
+            }
+
+        });  
+		inputPane.add(nextWeekButton, c);
 		
 		
 		inputPane.setBorder(BorderFactory.createLineBorder(Color.black));
@@ -373,9 +382,9 @@ public class ScheduleRunner extends JFrame implements PropertyChangeListener{
 	public void propertyChange(PropertyChangeEvent e) {
         Object source = e.getSource();
         if (source == dateField) {
-            dateToSchedule = ((Date)dateField.getValue());
+            dateToSchedule = ScheduleCalc.getZeroedDate((Date)(dateField.getValue()));
         } else if (source == padField) {
-        	pastADay = ((Date)padField.getValue());
+        	pastADay = ScheduleCalc.getZeroedDate((Date)(padField.getValue()));
         }
 
         updateSchedule(sc, dateToSchedule, pastADay);
