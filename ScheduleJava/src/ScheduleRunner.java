@@ -6,6 +6,7 @@ import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
+import java.awt.GridLayout;
 import java.awt.Insets;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -24,6 +25,8 @@ import java.util.Map;
 import javax.swing.BorderFactory;
 import javax.swing.BoxLayout;
 import javax.swing.JButton;
+import javax.swing.JCheckBox;
+import javax.swing.JComponent;
 import javax.swing.JFormattedTextField;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
@@ -42,6 +45,11 @@ public class ScheduleRunner extends JFrame implements PropertyChangeListener{
 	JFormattedTextField padField;
 	Date dateToSchedule;
 	Date pastADay;
+	
+	JFormattedTextField[] classFields;
+	String[] classNames;
+	
+	JCheckBox[][] labCheckBoxes;
 	
 	ScheduleCalc sc;
 	
@@ -112,24 +120,37 @@ public class ScheduleRunner extends JFrame implements PropertyChangeListener{
         
         //room / object tabs
         JTabbedPane controlPane = new JTabbedPane();
+        int tabWidth = 900;
+        int tabHeight = 640;
         
         // Schedule Tab with BoxLayout (top to bottom)
         JPanel schedulePanel = new JPanel();
         schedulePanel.setLayout(new BoxLayout(schedulePanel, BoxLayout.Y_AXIS));
-        schedulePanel.setPreferredSize(new Dimension(900, 640));
+        schedulePanel.setPreferredSize(new Dimension(tabWidth, tabHeight));
         
         // Input Panel
-        JPanel inputPanel = createInputPane(900);
+        JPanel inputPanel = createInputPane(tabWidth);
         
         // Display Panel 
         JPanel gridPanel = createScheduleGrid(ScheduleCalc.TIMINGS);
-        gridPanel.setPreferredSize(new Dimension(900, 500));
+        gridPanel.setPreferredSize(new Dimension(tabWidth, (int)(0.75 * tabHeight)));
         
         // Add the components
         schedulePanel.add(inputPanel);
         schedulePanel.add(gridPanel);
         
-        // Add the Tab
+        // Setup Tab with BoxLayout (left to right)
+        JPanel setupPanel = new JPanel();
+        
+        // Add the components
+        JPanel classInputPane = initClassInputPane(new Dimension(tabWidth / 2, 0), 24, 2, 4, 40);
+        JPanel labInputPane = initLabInputPane(new Dimension((int)(tabWidth / 2), 0), 32, 40);
+        setupPanel.add(classInputPane, BorderLayout.LINE_START);
+        setupPanel.add(labInputPane, BorderLayout.LINE_END);
+        setupPanel.setAlignmentY(0f);
+        
+        // Add the Tabs
+        controlPane.addTab("Setup", setupPanel);
         controlPane.addTab("Schedule", schedulePanel);
         
         //Set the menu bar and add the label to the content pane.
@@ -140,6 +161,145 @@ public class ScheduleRunner extends JFrame implements PropertyChangeListener{
         pack();
         setLocationRelativeTo(null);
     }
+	
+	private JPanel initClassInputPane(Dimension area, int fieldHeight, int hgap, int vgap, int padding) {
+		
+		// Base Panel that we will return
+		JPanel classInputPane = new JPanel();
+		classInputPane.setLayout(new GridLayout(7, 1, 0, vgap));
+		
+		// Set proper dimensioning
+		Dimension preferredArea = area;
+		if (fieldHeight > 0) {
+			preferredArea = new Dimension((int)(area.getWidth()), (fieldHeight * 7) + (padding * 2));
+		}
+		classInputPane.setMaximumSize(preferredArea);
+		
+		// Hard-coded label width
+		int labelWidth = 60;
+		
+		// Initialize the ScheduleRunner's field references
+		classFields = new JFormattedTextField[7];
+		classNames = new String[7];
+		
+		// One pair for each period
+		for (int i = 0; i < 7; i ++) {
+			// Base Panel for this pair
+			JPanel overBox = new JPanel(new FlowLayout(FlowLayout.LEADING, hgap, 0));
+			
+			// Overall Size
+			int overWidth = (int)(preferredArea.getWidth());
+			int overHeight = (int)((preferredArea.getHeight() - (padding * 2)) / 7);
+			
+			// JLabel with text
+			JLabel periodLabel = new JLabel("Period " + (i + 1) + ":");
+			periodLabel.setPreferredSize(new Dimension(labelWidth, overHeight - vgap));
+			overBox.add(periodLabel);
+			
+			// JFormattedTextField with left-over width
+			classFields[i] = new JFormattedTextField();
+			classFields[i].setColumns(15);
+			classFields[i].addPropertyChangeListener("value", this);
+			classFields[i].setPreferredSize(new Dimension(overWidth - labelWidth - hgap, overHeight - vgap));
+			overBox.add(classFields[i]);
+			
+			// Add this pair to the input pane
+			classInputPane.add(overBox);
+		}
+		
+		// Padding, border, alignment
+		Border padBorder = BorderFactory.createEmptyBorder(padding, padding, padding, padding);
+		classInputPane.setBorder(padBorder);
+		
+		return classInputPane;
+	}
+	
+	private JPanel initLabInputPane(Dimension area, int fieldHeight, int padding) {
+		
+		// Base Panel that we will return
+		JPanel labInputPane = new JPanel();
+		labInputPane.setLayout(new GridBagLayout());
+		GridBagConstraints c = new GridBagConstraints();
+		
+		// Set proper dimensioning
+		Dimension preferredArea = area;
+		if (fieldHeight > 0) {
+			preferredArea = new Dimension((int)(area.getWidth()), (fieldHeight * 7) + (padding * 2));
+		}
+		labInputPane.setPreferredSize(preferredArea);
+		
+		// Initialize the field references
+		labCheckBoxes = new JCheckBox[7][7];
+		
+		// Add our content
+		// i < (1 + 7) means i < (top row + 7 periods)
+		int maxRow = 1 + 7;
+		int maxCol = 1 + 7;
+		for (int row = 0; row < maxRow; row ++) {
+			// n < (1 + 7) means n < (left column + 7 letter days)
+			for (int col = 0; col < maxCol; col ++) {
+				// Set the position of this cell
+				c.gridx = col;
+				c.gridy = row;
+				
+				// Default constraints
+				c.gridwidth = 1;
+				c.gridheight = 1;
+				c.fill = GridBagConstraints.BOTH;
+				c.weightx = 0.5;
+				c.weighty = 0.5;
+				
+				// Custom constraints
+				if (col == 0)
+					c.weightx = 0.2;
+				
+				// End rows or columns
+				if (row == maxRow - 1) 
+					c.gridheight = GridBagConstraints.REMAINDER;
+				
+				if (col == maxCol - 1)
+					c.gridwidth = GridBagConstraints.REMAINDER;
+				
+				// Create the JComponent that will represent this cell
+				JComponent cell;
+				
+				// Create a label or a jpanel
+				if (col == 0) {
+					// Periods Label (Left Column)
+					String cellText = "-";
+					if (row > 0)
+						cellText = " P." + row + " ";
+					cell = new JLabel(cellText, SwingConstants.CENTER);
+				} 
+				else if (row == 0) {
+					// Letter Day Label (Top Row)
+					char letDay = (char)((int)('A') + (col - 1));
+					cell = new JLabel("" + letDay, SwingConstants.CENTER);
+				} 
+				else {
+					cell = new JPanel();
+					
+					// Checkbox (Everything else)
+					JCheckBox thisCheckBox = new JCheckBox();
+					thisCheckBox.setSelected(false);
+					
+					cell.add(thisCheckBox, BorderLayout.CENTER);
+				}
+				
+				// Bordering
+				cell.setBorder(blackLines);
+				
+				// Add the cell panel to the input pane
+				labInputPane.add(cell, c);
+			}
+		}
+		
+		// Border
+		Border padBorder = BorderFactory.createEmptyBorder(padding, padding, padding, padding);
+		labInputPane.setBorder(padBorder);
+		
+		return labInputPane;
+	}
 	
 	public void updateSchedule(ScheduleCalc sc, Date dateToSchedule, Date pastADay) {
 		
@@ -381,6 +541,14 @@ public class ScheduleRunner extends JFrame implements PropertyChangeListener{
             dateToSchedule = ScheduleCalc.getZeroedDate((Date)(dateField.getValue()));
         } else if (source == padField) {
         	pastADay = ScheduleCalc.getZeroedDate((Date)(padField.getValue()));
+        }
+        
+        else {
+        	for (int i = 0; i < classFields.length; i ++) {
+        		if (source == classFields[i]) {
+        			classNames[i] = ((String)(classFields[i].getValue()));
+        		}
+        	}
         }
 
         updateSchedule(sc, dateToSchedule, pastADay);
