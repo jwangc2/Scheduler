@@ -1,5 +1,6 @@
 import java.awt.BorderLayout;
 import java.awt.Color;
+import java.awt.Component;
 import java.awt.ComponentOrientation;
 import java.awt.Container;
 import java.awt.Dimension;
@@ -14,6 +15,7 @@ import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
@@ -23,6 +25,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import javax.swing.BorderFactory;
+import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
@@ -68,6 +71,10 @@ public class ScheduleRunner extends JFrame implements PropertyChangeListener{
 	private Color colLabFree = new Color(255, 214, 178);
 	private Color colUnsched = new Color(240, 240, 240);
 	
+	private final String fileDir = "./schedule_data/";
+	private final String setupFname = "setup.csv";
+	private final String holidayFname = "holidays.csv";
+	
 	private Color[] colorScheme = {
 			colBr, 
 			colClass, colClass, colClass, colClass, colClass, colClass, colClass,
@@ -93,16 +100,26 @@ public class ScheduleRunner extends JFrame implements PropertyChangeListener{
 	public ScheduleRunner(String label){
 		super(label);
 		
-		// Attempt to load the setup file. Otherwise use the broken default one.
+		// Create a clean ScheduleCalc and define the default directory
+		sc = new ScheduleCalc();
+		
+		// Load the setup file
 		try {
-			sc = new ScheduleCalc(new File("./schedule_data/setup.csv"));
+			sc.loadSetup(new File(fileDir + setupFname));
 		} catch (FileNotFoundException e) {
-			JOptionPane.showMessageDialog(this, "You have no setup file!\nYou might be missing unscheduled days!");
-			sc = new ScheduleCalc();
+			JOptionPane.showMessageDialog(this, "Cannot find the [" + setupFname + "] file.");
 		} catch (ParseException e) {
-			JOptionPane.showMessageDialog(this, "Corrupted setup file. Get a new one.");
-			sc = new ScheduleCalc();
+			JOptionPane.showMessageDialog(this, "Corrupted [" + setupFname + "] file.");
 		}
+		
+		// Load the holidays file
+		try {
+			sc.loadHolidays(new File(fileDir + holidayFname));
+		} catch (FileNotFoundException e) {
+			JOptionPane.showMessageDialog(this, "Cannot find the [" + holidayFname + "] file.");
+		} catch (ParseException e) {
+			JOptionPane.showMessageDialog(this, "Corrupted [" + holidayFname + "] file.");
+		} 
 		
 		// Create our components and add them to this frame
 		initComponents();
@@ -123,31 +140,137 @@ public class ScheduleRunner extends JFrame implements PropertyChangeListener{
         int tabWidth = 900;
         int tabHeight = 640;
         
+        dateFormat = new SimpleDateFormat("MM/dd/yyyy");
+        
+        // Setup Tab with BoxLayout (left to right)
+        JPanel setupPanel = new JPanel();
+        setupPanel.setLayout(new GridBagLayout());
+        
+        {
+	        GridBagConstraints c = new GridBagConstraints();
+	        
+	        // Add the components
+	        // Class Name Input
+	        c.gridx = 0;
+	        c.gridy = 0;
+	        c.gridwidth = 2;
+	        c.gridheight = 1;
+	        c.weighty = 0.0;
+	        c.anchor = GridBagConstraints.PAGE_START;
+	        JPanel classInputPane = initClassInputPane(new Dimension(tabWidth / 2, 0), 24, 12, 4, 20);
+	        setupPanel.add(classInputPane, c);
+	        
+	        // -PAD Input-
+	        
+	        // >Add the JLabel
+	        c.gridx = 0;
+	        c.gridy = 1;
+	        c.gridwidth = 1;
+	        c.gridheight = 1;
+	        c.weightx = 0.0;
+	        c.weighty = 0.0;
+	        c.anchor = GridBagConstraints.LINE_START;
+	        JLabel testLabel = new JLabel("Past 'A' Day: ");
+	        setupPanel.add(testLabel, c);
+	       
+	        // >Add the Text Field
+	        c.gridx = 1;
+	        c.gridy = 1;
+	        c.gridwidth = 1;
+	        c.gridheight = 1;
+	        c.weightx = 0.0;
+	        c.weighty = 0.0;
+	        c.anchor = GridBagConstraints.LINE_END;
+	        padField = new JFormattedTextField(dateFormat);
+	        pastADay = sc.getDefaultPad();
+			padField.setValue(pastADay);
+			padField.setColumns(10);
+			setupPanel.add(padField, c);
+			
+			// -Apply Button-
+			c.gridx = 0;
+			c.gridy = 2;
+			c.gridwidth = 2;
+			c.gridheight = 1;
+			c.weightx = 0.0;
+			c.weighty = 0.0;
+			c.anchor = GridBagConstraints.PAGE_END;
+			c.fill = GridBagConstraints.HORIZONTAL;
+			JButton applyButton = new JButton("Apply Settings");
+			applyButton.addActionListener(new ActionListener() {
+	 
+	            public void actionPerformed(ActionEvent e) {
+	            	// Set PAD
+	            	pastADay = (Date)(padField.getValue());
+	            	sc.setDefaultPad(pastADay);
+	            	
+	            	// Set class names
+	            	for (int i = 0; i < 7; i ++) {
+	            		sc.setClass(i + 1, classFields[i].getText());
+	            	}
+	            	
+	            	// Set lab frees
+	            	for (int row = 0; row < labCheckBoxes.length; row ++) {
+	            		for (int col = 0; col < labCheckBoxes[row].length; col ++) {
+	            			sc.setLabFree(row + 1, col + 1, labCheckBoxes[row][col].isSelected());
+	            		}
+	            	}
+	            	
+	            	// Update
+	                updateSchedule(sc, dateToSchedule, pastADay);
+	                
+	                // Export
+	                exportSettings();
+	            }
+	
+	        });  
+			setupPanel.add(applyButton, c);
+	        
+	        // -Lab-Free Input-
+	        c.gridx = 2;
+	        c.gridy = 0;
+	        c.gridwidth = 1;
+	        c.gridheight = 3;
+	        c.weightx = 0.0;
+	        c.weighty = 0.0;
+	        c.anchor = GridBagConstraints.FIRST_LINE_END;
+	        c.fill = GridBagConstraints.NONE;
+	        JPanel labInputPane = initLabInputPane(new Dimension((int)(tabWidth / 2), 0), 33, 10);
+	        setupPanel.add(labInputPane, c);
+	        
+	        // -Bottom Spacer-
+	        c.gridx = 0;
+	        c.gridy = 3;
+	        c.gridwidth = 3;
+	        c.gridheight = 1;
+	        c.weightx = 1.0;
+	        c.weighty = 1.0;
+	        c.anchor = GridBagConstraints.PAGE_START;
+	        c.fill = GridBagConstraints.BOTH;
+	        JPanel spacerPane = new JPanel();
+	        setupPanel.add(spacerPane, c);
+	
+	        int padding = 75;
+	        setupPanel.setBorder(BorderFactory.createEmptyBorder(padding, padding, padding, padding));
+        }
+        
         // Schedule Tab with BoxLayout (top to bottom)
         JPanel schedulePanel = new JPanel();
         schedulePanel.setLayout(new BoxLayout(schedulePanel, BoxLayout.Y_AXIS));
         schedulePanel.setPreferredSize(new Dimension(tabWidth, tabHeight));
         
-        // Input Panel
-        JPanel inputPanel = createInputPane(tabWidth);
-        
-        // Display Panel 
-        JPanel gridPanel = createScheduleGrid(ScheduleCalc.TIMINGS);
-        gridPanel.setPreferredSize(new Dimension(tabWidth, (int)(0.75 * tabHeight)));
-        
-        // Add the components
-        schedulePanel.add(inputPanel);
-        schedulePanel.add(gridPanel);
-        
-        // Setup Tab with BoxLayout (left to right)
-        JPanel setupPanel = new JPanel();
-        
-        // Add the components
-        JPanel classInputPane = initClassInputPane(new Dimension(tabWidth / 2, 0), 24, 2, 4, 40);
-        JPanel labInputPane = initLabInputPane(new Dimension((int)(tabWidth / 2), 0), 32, 40);
-        setupPanel.add(classInputPane, BorderLayout.LINE_START);
-        setupPanel.add(labInputPane, BorderLayout.LINE_END);
-        setupPanel.setAlignmentY(0f);
+        {
+	        // Input Panel
+	        JPanel inputPanel = createInputPane(tabWidth);
+	        
+	        // Display Panel 
+	        JPanel gridPanel = createScheduleGrid(ScheduleCalc.TIMINGS);
+	        gridPanel.setPreferredSize(new Dimension(tabWidth, (int)(0.9 * tabHeight)));
+	        
+	        // Add the components
+	        schedulePanel.add(inputPanel);
+	        schedulePanel.add(gridPanel);
+        }
         
         // Add the Tabs
         controlPane.addTab("Setup", setupPanel);
@@ -168,16 +291,6 @@ public class ScheduleRunner extends JFrame implements PropertyChangeListener{
 		JPanel classInputPane = new JPanel();
 		classInputPane.setLayout(new GridLayout(7, 1, 0, vgap));
 		
-		// Set proper dimensioning
-		Dimension preferredArea = area;
-		if (fieldHeight > 0) {
-			preferredArea = new Dimension((int)(area.getWidth()), (fieldHeight * 7) + (padding * 2));
-		}
-		classInputPane.setMaximumSize(preferredArea);
-		
-		// Hard-coded label width
-		int labelWidth = 60;
-		
 		// Initialize the ScheduleRunner's field references
 		classFields = new JFormattedTextField[7];
 		classNames = new String[7];
@@ -185,22 +298,20 @@ public class ScheduleRunner extends JFrame implements PropertyChangeListener{
 		// One pair for each period
 		for (int i = 0; i < 7; i ++) {
 			// Base Panel for this pair
-			JPanel overBox = new JPanel(new FlowLayout(FlowLayout.LEADING, hgap, 0));
-			
-			// Overall Size
-			int overWidth = (int)(preferredArea.getWidth());
-			int overHeight = (int)((preferredArea.getHeight() - (padding * 2)) / 7);
+			JPanel overBox = new JPanel();
+			overBox.setLayout(new BoxLayout(overBox, BoxLayout.X_AXIS));
 			
 			// JLabel with text
 			JLabel periodLabel = new JLabel("Period " + (i + 1) + ":");
-			periodLabel.setPreferredSize(new Dimension(labelWidth, overHeight - vgap));
 			overBox.add(periodLabel);
+			
+			overBox.add(Box.createRigidArea(new Dimension(hgap, 2)));
 			
 			// JFormattedTextField with left-over width
 			classFields[i] = new JFormattedTextField();
+			classFields[i].setText(sc.getClass(i + 1));
 			classFields[i].setColumns(15);
 			classFields[i].addPropertyChangeListener("value", this);
-			classFields[i].setPreferredSize(new Dimension(overWidth - labelWidth - hgap, overHeight - vgap));
 			overBox.add(classFields[i]);
 			
 			// Add this pair to the input pane
@@ -208,7 +319,8 @@ public class ScheduleRunner extends JFrame implements PropertyChangeListener{
 		}
 		
 		// Padding, border, alignment
-		Border padBorder = BorderFactory.createEmptyBorder(padding, padding, padding, padding);
+		Border padBorder = BorderFactory.createEmptyBorder(0, 0, padding, 0);
+		//padBorder = BorderFactory.createCompoundBorder(blackLines, padBorder);
 		classInputPane.setBorder(padBorder);
 		
 		return classInputPane;
@@ -222,10 +334,18 @@ public class ScheduleRunner extends JFrame implements PropertyChangeListener{
 		GridBagConstraints c = new GridBagConstraints();
 		
 		// Set proper dimensioning
-		Dimension preferredArea = area;
+		Dimension preferredArea;
+		int preferredWidth = (int)(area.getWidth());
+		int preferredHeight = (int)(area.getHeight());
+		
 		if (fieldHeight > 0) {
-			preferredArea = new Dimension((int)(area.getWidth()), (fieldHeight * 7) + (padding * 2));
+			preferredHeight = (fieldHeight * 7);
 		}
+		
+		preferredWidth += padding * 2;
+		preferredHeight += padding * 2;
+		
+		preferredArea = new Dimension(preferredWidth, preferredHeight);
 		labInputPane.setPreferredSize(preferredArea);
 		
 		// Initialize the field references
@@ -281,9 +401,10 @@ public class ScheduleRunner extends JFrame implements PropertyChangeListener{
 					
 					// Checkbox (Everything else)
 					JCheckBox thisCheckBox = new JCheckBox();
-					thisCheckBox.setSelected(false);
+					thisCheckBox.setSelected(sc.isLabFree(row, col));
 					
 					cell.add(thisCheckBox, BorderLayout.CENTER);
+					labCheckBoxes[row - 1][col - 1] = thisCheckBox;
 				}
 				
 				// Bordering
@@ -295,7 +416,8 @@ public class ScheduleRunner extends JFrame implements PropertyChangeListener{
 		}
 		
 		// Border
-		Border padBorder = BorderFactory.createEmptyBorder(padding, padding, padding, padding);
+		Border padBorder = BorderFactory.createEmptyBorder(0, padding, 0, 0);
+		//padBorder = BorderFactory.createCompoundBorder(blackLines, padBorder);
 		labInputPane.setBorder(padBorder);
 		
 		return labInputPane;
@@ -373,7 +495,6 @@ public class ScheduleRunner extends JFrame implements PropertyChangeListener{
 		
 		// Parse
 		GridBagConstraints c = new GridBagConstraints();
-		dateFormat = new SimpleDateFormat("MM/dd/yyyy");
 		
 		c.insets = new Insets(1, 2, 1, 2);
 		c.fill = GridBagConstraints.BOTH;
@@ -383,14 +504,10 @@ public class ScheduleRunner extends JFrame implements PropertyChangeListener{
 		// x = 0
 		c.gridx = 0;
 		c.gridy = 0;
-		inputPane.add(new JLabel("Past A Day:"), c);
-		
-		c.gridx = 0;
-		c.gridy = 1;
 		inputPane.add(new JLabel("Date to Schedule:"), c);
 		
 		c.gridx = 0;
-		c.gridy = 2;
+		c.gridy = 1;
 		c.gridwidth = 1;
 		JButton prevWeekButton = new JButton("Prev. Week");
 		prevWeekButton.addActionListener(new ActionListener() {
@@ -406,21 +523,6 @@ public class ScheduleRunner extends JFrame implements PropertyChangeListener{
 
         });  
 		inputPane.add(prevWeekButton, c);
-	
-		
-		c.gridheight = 1;
-		// x = 1
-		// PAD Field
-		padField = new JFormattedTextField(dateFormat);
-		pastADay = sc.getDefaultPad();
-		padField.setValue(pastADay);
-	
-		padField.setColumns(10);
-		padField.addPropertyChangeListener("value", this);
-		c.gridx = 1;
-		c.gridy = 0;
-		c.gridwidth = 2;
-		inputPane.add(padField, c);
 		
 		JButton prevDayButton = new JButton("Prev. Day");
 		prevDayButton.addActionListener(new ActionListener() {
@@ -436,7 +538,7 @@ public class ScheduleRunner extends JFrame implements PropertyChangeListener{
 
         });  
 		c.gridx = 1;
-		c.gridy = 2;
+		c.gridy = 1;
 		c.gridwidth = 1;
 		inputPane.add(prevDayButton, c);
 		
@@ -448,12 +550,10 @@ public class ScheduleRunner extends JFrame implements PropertyChangeListener{
 		dateField.setColumns(10);
 		dateField.addPropertyChangeListener("value", this);
 		c.gridx = 1;
-		c.gridy = 1;
+		c.gridy = 0;
 		c.gridwidth = 2;
 		inputPane.add(dateField, c);
-		
-	
-		
+
 		c.gridheight = 1;
 		// x = 2
 		JButton nextDayButton = new JButton("Next Day");
@@ -470,34 +570,13 @@ public class ScheduleRunner extends JFrame implements PropertyChangeListener{
 
         });  
 		c.gridx = 2;
-		c.gridy = 2;
+		c.gridy = 1;
 		c.gridwidth = 1;
 		inputPane.add(nextDayButton, c);
 		
 		// x = 3
 		c.gridx = 3;
 		c.gridy = 0;
-		c.gridwidth = 1;
-		JButton defaultButton = new JButton("Default");
-		defaultButton.addActionListener(new ActionListener() {
- 
-            public void actionPerformed(ActionEvent e) {
-            	try {
-					pastADay = dateFormat.parse("08/15/2013");
-					
-					padField.setValue(pastADay);
-	                updateSchedule(sc, dateToSchedule, pastADay);
-				} catch (ParseException e1) {
-					// TODO Auto-generated catch block
-					e1.printStackTrace();
-				}
-            }
-
-        });  
-		inputPane.add(defaultButton, c);
-		
-		c.gridx = 3;
-		c.gridy = 1;
 		c.gridwidth = 1;
 		JButton currentButton = new JButton("Today");
 		currentButton.addActionListener(new ActionListener() {
@@ -512,7 +591,7 @@ public class ScheduleRunner extends JFrame implements PropertyChangeListener{
 		inputPane.add(currentButton, c);
 		
 		c.gridx = 3;
-		c.gridy = 2;
+		c.gridy = 1;
 		c.gridwidth = 1;
 		JButton nextWeekButton = new JButton("Next Week");
 		nextWeekButton.addActionListener(new ActionListener() {
@@ -539,16 +618,6 @@ public class ScheduleRunner extends JFrame implements PropertyChangeListener{
         Object source = e.getSource();
         if (source == dateField) {
             dateToSchedule = ScheduleCalc.getZeroedDate((Date)(dateField.getValue()));
-        } else if (source == padField) {
-        	pastADay = ScheduleCalc.getZeroedDate((Date)(padField.getValue()));
-        }
-        
-        else {
-        	for (int i = 0; i < classFields.length; i ++) {
-        		if (source == classFields[i]) {
-        			classNames[i] = ((String)(classFields[i].getValue()));
-        		}
-        	}
         }
 
         updateSchedule(sc, dateToSchedule, pastADay);
@@ -653,5 +722,14 @@ public class ScheduleRunner extends JFrame implements PropertyChangeListener{
 		}
 		
 		return gridBagPane;
+	}
+	
+	private void exportSettings() {
+		try {
+			sc.export(fileDir, setupFname, holidayFname);
+			JOptionPane.showMessageDialog(this, "Your settings have been saved.");
+		} catch (IOException e) {
+			JOptionPane.showMessageDialog(this, "Failed to export.");
+		}
 	}
 }

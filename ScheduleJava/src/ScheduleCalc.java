@@ -98,14 +98,33 @@ public class ScheduleCalc {
 		formatter = new SimpleDateFormat("MM/dd/yyyy");
 	}
 	
-	public ScheduleCalc(File setup) throws FileNotFoundException, ParseException {
-		// Ensure that the members are initiated
-		this();
+	// Initialize the pre-determined values (possibly varies from year to year)
+	private void initSchedule() {
+		// Classes
+		classes = new String[17];
 		
-		// Try to load and parse
+		classes[ScheduleCalc.WEEKEND] = "Weekend";
+		classes[ScheduleCalc.LAB_FREE] = "Lab Free";
+		classes[ScheduleCalc.OFFICE_HOURS] = "Office Hours";
+		classes[ScheduleCalc.BREAK] = "Break";
+		classes[ScheduleCalc.ASSEMBLY] = "Assembly";
+		classes[ScheduleCalc.ADV]= "ADV";
+		classes[ScheduleCalc.FAC_PLC] = "FAC PLC";
+		classes[ScheduleCalc.FAC_MTGS] = "FAC MTGS";
+		classes[ScheduleCalc.ARTS_ADV] = "ARTS/ADV";
+		classes[ScheduleCalc.UNSCHEDULED] = "Unscheduled";
+		
+		// Default class names
+		for (int i = 1; i <= 7; i ++) {
+			classes[i] = "Period " + i;
+		}
+	}
+	
+	public void loadSetup(File f_setup) throws FileNotFoundException, ParseException {
+		// Load f_setup
 		{
 			
-			Scanner sc = new Scanner(setup);
+			Scanner sc = new Scanner(f_setup);
 			int currentLine = 0;
 			
 			// Get the next line
@@ -143,8 +162,40 @@ public class ScheduleCalc {
 						defaultPad = formatter.parse(nextValue);
 						break;
 					}
-					else if (currentLine > 11) {                        									// Holidays
-						Date thisDate = formatter.parse(nextValue);
+				}
+				
+				csv.close();
+			}
+			
+			sc.close();
+		}
+	}
+	
+	public void loadHolidays(File f_holidays) throws FileNotFoundException, ParseException {
+		// Load f_holidays
+		{
+			Scanner sc = new Scanner(f_holidays);
+			int currentLine = 0;
+			
+			SimpleDateFormat holidayFormatter = formatter;
+			
+			// Get the next line
+			while(sc.hasNextLine()) {
+				currentLine ++;
+				
+				// Parse this line
+				Scanner csv = new Scanner(sc.nextLine());
+				csv.useDelimiter(",");
+				
+				// Get the next csv in this line
+				while (csv.hasNext()) {
+					String nextValue = csv.next();
+					if (currentLine == 1) {
+						holidayFormatter = new SimpleDateFormat(nextValue);
+						break;
+					}
+					else {
+						Date thisDate = holidayFormatter.parse(nextValue);
 						if (thisDate != null)
 							holidays.add(thisDate);
 						break;
@@ -155,28 +206,6 @@ public class ScheduleCalc {
 			}
 			
 			sc.close();
-		}
-	}
-	
-	// Initialize the pre-determined values (possibly varies from year to year)
-	private void initSchedule() {
-		// Classes
-		classes = new String[17];
-		
-		classes[ScheduleCalc.WEEKEND] = "Weekend";
-		classes[ScheduleCalc.LAB_FREE] = "Lab Free";
-		classes[ScheduleCalc.OFFICE_HOURS] = "Office Hours";
-		classes[ScheduleCalc.BREAK] = "Break";
-		classes[ScheduleCalc.ASSEMBLY] = "Assembly";
-		classes[ScheduleCalc.ADV]= "ADV";
-		classes[ScheduleCalc.FAC_PLC] = "FAC PLC";
-		classes[ScheduleCalc.FAC_MTGS] = "FAC MTGS";
-		classes[ScheduleCalc.ARTS_ADV] = "ARTS/ADV";
-		classes[ScheduleCalc.UNSCHEDULED] = "Unscheduled";
-		
-		// Default class names
-		for (int i = 1; i <= 7; i ++) {
-			classes[i] = "Period " + i;
 		}
 	}
 	
@@ -295,11 +324,11 @@ public class ScheduleCalc {
 	    return (int) (daysWithoutSunday-w1+w2);
 	}
 	
-	public void export(String path) throws IOException {
+	public void export(String dirPath, String setupFname, String holidayFname) throws IOException {
 		{
-			BufferedWriter bw = new BufferedWriter(new FileWriter(path));
+			// Write the setup file
+			BufferedWriter bw = new BufferedWriter(new FileWriter(dirPath + setupFname));
 			
-			System.out.println("classes");
 			// Write yo classes
 			for (int i = 1; i <= 7; i ++) {
 				String toWrite = classes[i];
@@ -314,7 +343,7 @@ public class ScheduleCalc {
 				String toWrite = "";
 				for (int n = 0; n < labFrees[i].length; n ++) {
 					if (labFrees[i][n]) {
-						toWrite += (char)((int)('A') + n) + ',';
+						toWrite += "" + (char)((int)('A') + n) + ',';
 					}
 				}
 				
@@ -331,9 +360,19 @@ public class ScheduleCalc {
 			
 			// Our default past a day
 			bw.write(formatter.format(defaultPad));
-			bw.newLine();
-			bw.newLine();
 			
+			// Update
+			bw.flush();
+			bw.close();
+			
+			
+			// Write the holidays file
+			bw = new BufferedWriter(new FileWriter(dirPath + holidayFname));
+			
+			// Our date pattern
+			bw.write(formatter.toPattern());
+			bw.newLine();
+						
 			// Holidays
 			for (int i = 0; i < holidays.size(); i ++) {
 				bw.write(formatter.format(holidays.get(i)));
@@ -347,6 +386,19 @@ public class ScheduleCalc {
 		}
 	}
 	
+	// Setters
+	public void setClass(int period, String name) {
+		classes[period] = name;
+	}
+	
+	public void setLabFree(int day, int period, boolean isOn) {
+		labFrees[day - 1][period - 1] = isOn;
+	}
+	
+	public void setDefaultPad(Date newPad) {
+		defaultPad = newPad;
+	}
+	
 	// Getters
 	public ArrayList<Date> getHolidays() {
 		return holidays;
@@ -354,6 +406,10 @@ public class ScheduleCalc {
 	
 	public boolean isHoliday(Date date) {
 		return (holidays.contains(date));
+	}
+	
+	public boolean isLabFree(int day, int period) {
+		return labFrees[day - 1][period - 1];
 	}
 	
 	public String getClass(int period) {
