@@ -10,6 +10,7 @@ import java.util.Date;
 import java.util.Calendar;
 import java.util.GregorianCalendar;
 import java.util.HashMap;
+import java.util.Map;
 import java.util.Scanner;
 
 
@@ -406,6 +407,11 @@ public class ScheduleCalc {
 	
 	public boolean isHoliday(Date date) {
 		return (holidays.contains(date));
+	}
+	
+	public boolean isPeriod(Date dateToSchedule, Date pastADay, int period) {
+		HashMap<Integer, Integer> sched = getSchedule(dateToSchedule, pastADay);
+		return (sched.containsValue(period));
 	}
 	
 	public boolean isLabFree(int day, int period) {
