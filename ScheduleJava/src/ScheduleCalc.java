@@ -55,6 +55,15 @@ public class ScheduleCalc {
 
 	};
 	
+	public final static int[] CELL_PADDING = {
+		0, 0, 0, 0,
+		30, 0, 0, 0,
+		0, 0, 0, 0,
+		0, 0, 0, 0,
+		0, 0, 0, 0,
+		0, 0, 0, 30
+	};
+	
 	public final static String[][] TIMING_TEXT = {
 		
 		{"(8:00-8:30)", "(7:45-8:30)", "(7:45-9:00)", "(7:45-8:30)", "(8:00-8:30)"},
@@ -275,6 +284,22 @@ public class ScheduleCalc {
 		return schedule;
 	}
 	
+	public HashMap<Integer, Integer> getBasicSchedule(int rotDay) {
+		HashMap<Integer, Integer> schedule = new HashMap<Integer, Integer>();
+		// Determine what period the first block of this day should be
+		int firstPeriod = ((4 * (rotDay - 1)) % 7) + 1;
+		
+		// Loop through each class block
+		for (int i = 0; i < 4; i ++) {
+			// Get this period based on the first block
+			int thisPeriod = ((firstPeriod + i - 1) % 7) + 1;
+			
+			schedule.put(i + 4, thisPeriod);
+		}
+		
+		return schedule;
+	}
+	
 	// Get the number of days from [end] since [start] (excluding weekends and holidays)
 	public int weekdaysFactor(Date start, Date end){
 		int days = weekdays(start, end);
@@ -412,6 +437,10 @@ public class ScheduleCalc {
 	public boolean isPeriod(Date dateToSchedule, Date pastADay, int period) {
 		HashMap<Integer, Integer> sched = getSchedule(dateToSchedule, pastADay);
 		return (sched.containsValue(period));
+	}
+	
+	public boolean isRotDay(Date dateToSchedule, Date pastADay, int rotDay) {
+		return rotDay == (weekdaysFactor(pastADay, dateToSchedule) % 7) + 1;
 	}
 	
 	public boolean isLabFree(int day, int period) {

@@ -38,6 +38,7 @@ import javax.swing.JPanel;
 import javax.swing.JTabbedPane;
 import javax.swing.SwingConstants;
 import javax.swing.border.Border;
+import javax.swing.border.TitledBorder;
 
 public class SchedulePanel extends JPanel implements PropertyChangeListener{
 JLabel[][] displayLabels;
@@ -53,12 +54,13 @@ JLabel[][] displayLabels;
 	
 	String[] filterItems = {"All Days", "School Days", 
 			"Period 1", "Period 2", "Period 3", "Period 4", "Period 5", "Period 6", "Period 7",
-			"Lab Frees"};
+			"Lab Frees", "A Day", "B Day", "C Day", "D Day", "E Day", "F Day", "G Day"};
 	JComboBox<String> filterCombo;
 	
 	JCheckBox[][] labCheckBoxes;
 	boolean useFilter = true;
 	int periodToSnap = -1;
+	int rotToSnap = -1;
 	
 	ScheduleCalc sc;
 	
@@ -126,17 +128,102 @@ JLabel[][] displayLabels;
         
         //room / object tabs
         JTabbedPane controlPane = new JTabbedPane();
-        int tabWidth = 900;
-        int tabHeight = 640;
+        int tabWidth = 960;
+        int tabHeight = 600;
         
         dateFormat = new SimpleDateFormat("MM/dd/yyyy");
         
         // Setup Tab with BoxLayout (top to bottom)
-        JPanel setupPanel = new JPanel();
+        JPanel setupPanel = initSetupPanel(tabWidth);
+
+        // Schedule Tab with BoxLayout (top to bottom)
+        JPanel schedulePanel = new JPanel();
+        schedulePanel.setLayout(new GridBagLayout());
+        schedulePanel.setPreferredSize(new Dimension(tabWidth, tabHeight));
+        
+        GridBagConstraints c = new GridBagConstraints();
+        {
+        	int innerPad = 10;
+        	int outmostPad = 6;
+        	
+	        // Input Panel
+        	c.gridx = 0;
+        	c.gridy = 0;
+        	c.gridwidth = 2;
+        	c.gridheight = 1;
+        	c.weightx = 1.0;
+        	c.weighty = 0.0;
+        	c.fill = GridBagConstraints.HORIZONTAL;
+	        JPanel inputPanel = createInputPane(tabWidth);
+	        Dimension inputSize = new Dimension(tabWidth, tabHeight / 7);
+	        inputPanel.setMinimumSize(inputSize);
+	        inputPanel.setMaximumSize(inputSize);
+	        inputPanel.setPreferredSize(inputSize);
+	        
+	        inputPanel.setBorder(createPaddedBorder(innerPad, outmostPad, blackLines, 0, 0));
+	        
+	        schedulePanel.add(inputPanel, c);
+	        
+	        // Filter Panel
+	        c.gridx = 0;
+        	c.gridy = 1;
+        	c.gridwidth = 1;
+        	c.gridheight = 1;
+        	c.weightx = 0.0;
+        	c.weighty = 1.0;
+        	c.fill = GridBagConstraints.VERTICAL;
+        	
+        	JPanel filterPanel = createFilterPane(tabWidth / 6, innerPad, outmostPad);
+        	
+        	// Border
+	        TitledBorder filterBorder = new TitledBorder(createPaddedBorder(outmostPad, outmostPad, blackLines, 0, 0));
+	        filterBorder.setTitle("Filters");
+	        filterBorder.setTitleJustification(TitledBorder.CENTER);
+	        filterPanel.setBorder(filterBorder);
+	        
+        	schedulePanel.add(filterPanel, c);
+	        
+	        // Display Panel
+	        c.gridx = 1;
+        	c.gridy = 1;
+        	c.gridwidth = 1;
+        	c.gridheight = 1;
+        	c.weightx = 1.0;
+        	c.weighty = 1.0;
+        	c.fill = GridBagConstraints.BOTH;
+        	c.anchor = GridBagConstraints.PAGE_START;
+	        JPanel gridPanel = createScheduleGrid(ScheduleCalc.TIMINGS);
+	        
+	        // Border
+	        TitledBorder gridBorder = new TitledBorder(createPaddedBorder(innerPad, outmostPad, blackLines, 0, 0));
+	        gridBorder.setTitle("Weekly Schedule");
+	        gridBorder.setTitleJustification(TitledBorder.CENTER);
+	        gridPanel.setBorder(gridBorder);
+	        
+	        schedulePanel.add(gridPanel, c);
+        }
+        
+        // Add the Tabs
+        controlPane.addTab("Setup", setupPanel);
+        controlPane.addTab("Schedule", schedulePanel);
+        
+        this.add(controlPane);
+    }
+	
+	private JPanel initSetupPanel(int tabWidth) {
+		JPanel setupPanel = new JPanel();
         setupPanel.setLayout(new GridBagLayout());
         
         JPanel setupInput = new JPanel();
         setupInput.setLayout(new GridBagLayout());
+        
+        JPanel setupLeft = new JPanel();
+        setupLeft.setLayout(new GridBagLayout());
+        
+        int innerPad = 20;
+		Border padBorder = BorderFactory.createEmptyBorder(innerPad, innerPad, innerPad, innerPad);
+		Border innerBorder = BorderFactory.createCompoundBorder(blackLines, padBorder);
+		innerBorder = BorderFactory.createCompoundBorder(padBorder, innerBorder);
         
         {
 	        GridBagConstraints c = new GridBagConstraints();
@@ -147,10 +234,10 @@ JLabel[][] displayLabels;
 	        c.gridy = 0;
 	        c.gridwidth = 2;
 	        c.gridheight = 1;
-	        c.weighty = 0.0;
-	        c.anchor = GridBagConstraints.PAGE_START;
-	        JPanel classInputPane = initClassInputPane(new Dimension(tabWidth / 2, 0), 24, 12, 4, 20);
-	        setupInput.add(classInputPane, c);
+	        c.weighty = 1.0;
+	        c.anchor = GridBagConstraints.CENTER;
+	        JPanel classInputPane = initClassInputPane(new Dimension((tabWidth / 2) - (100), 0), 24, 12, 4, 0);
+	        setupLeft.add(classInputPane, c);
 	        
 	        // -PAD Input-
 	        
@@ -163,7 +250,7 @@ JLabel[][] displayLabels;
 	        c.weighty = 0.0;
 	        c.anchor = GridBagConstraints.LINE_START;
 	        JLabel testLabel = new JLabel("Past 'A' Day: ");
-	        setupInput.add(testLabel, c);
+	        setupLeft.add(testLabel, c);
 	       
 	        // >Add the Text Field
 	        c.gridx = 1;
@@ -177,7 +264,7 @@ JLabel[][] displayLabels;
 	        pastADay = sc.getDefaultPad();
 			padField.setValue(pastADay);
 			padField.setColumns(10);
-			setupInput.add(padField, c);
+			setupLeft.add(padField, c);
 			
 			// -Apply Button-
 			c.gridx = 0;
@@ -185,9 +272,10 @@ JLabel[][] displayLabels;
 			c.gridwidth = 2;
 			c.gridheight = 1;
 			c.weightx = 0.0;
-			c.weighty = 0.0;
-			c.anchor = GridBagConstraints.PAGE_END;
+			c.weighty = 0.5;
+			c.anchor = GridBagConstraints.CENTER;
 			c.fill = GridBagConstraints.HORIZONTAL;
+			JPanel buttonPane = new JPanel();
 			JButton applyButton = new JButton("Apply Settings");
 			applyButton.addActionListener(new ActionListener() {
 	 
@@ -216,18 +304,36 @@ JLabel[][] displayLabels;
 	            }
 	
 	        });  
-			setupInput.add(applyButton, c);
-	        
-	        // -Lab-Free Input-
-	        c.gridx = 2;
+			buttonPane.add(applyButton);
+			setupLeft.add(buttonPane, c);
+			
+			TitledBorder classBorder = new TitledBorder(innerBorder, "Class Names");
+	        classBorder.setTitleJustification(TitledBorder.CENTER);
+			setupLeft.setBorder(classBorder);
+		    c.gridx = 0;
 	        c.gridy = 0;
 	        c.gridwidth = 1;
-	        c.gridheight = 3;
+	        c.gridheight = 1;
+	        c.weightx = 0.0;
+	        c.weighty = 0.0;
+	        c.anchor = GridBagConstraints.FIRST_LINE_START;
+	        c.fill = GridBagConstraints.VERTICAL;
+			setupInput.add(setupLeft, c);
+			
+	        
+	        // -Lab-Free Input-
+	        c.gridx = 1;
+	        c.gridy = 0;
+	        c.gridwidth = 1;
+	        c.gridheight = 1;
 	        c.weightx = 0.0;
 	        c.weighty = 0.0;
 	        c.anchor = GridBagConstraints.FIRST_LINE_END;
-	        c.fill = GridBagConstraints.NONE;
-	        JPanel labInputPane = initLabInputPane(new Dimension((int)(tabWidth / 2), 0), 33, 10);
+	        c.fill = GridBagConstraints.VERTICAL;
+	        JPanel labInputPane = initLabInputPane(new Dimension((int)(tabWidth / 2) - (100), 0), 33, 10);
+	        TitledBorder labBorder = new TitledBorder(innerBorder, "Lab Frees");
+	        labBorder.setTitleJustification(TitledBorder.CENTER);
+	        labInputPane.setBorder(labBorder);
 	        setupInput.add(labInputPane, c);
 	       
         }
@@ -247,7 +353,9 @@ JLabel[][] displayLabels;
         // Border
         int padding = 35;
         Border spaceBorder = BorderFactory.createEmptyBorder(padding, padding, padding, padding);
-        Border finalBorder = BorderFactory.createCompoundBorder(spaceBorder, blackLines);
+        TitledBorder titleBorder = BorderFactory.createTitledBorder(blackLines, "Setup Menu");
+        titleBorder.setTitleJustification(TitledBorder.CENTER);
+        Border finalBorder = BorderFactory.createCompoundBorder(spaceBorder, titleBorder);
         finalBorder = BorderFactory.createCompoundBorder(finalBorder, spaceBorder);
         setupInput.setBorder(finalBorder);
         
@@ -265,32 +373,9 @@ JLabel[][] displayLabels;
         
         JPanel spacerPane = new JPanel();
         setupPanel.add(spacerPane, c);
-
         
-        // Schedule Tab with BoxLayout (top to bottom)
-        JPanel schedulePanel = new JPanel();
-        schedulePanel.setLayout(new BoxLayout(schedulePanel, BoxLayout.Y_AXIS));
-        schedulePanel.setPreferredSize(new Dimension(tabWidth, tabHeight));
-        
-        {
-	        // Input Panel
-	        JPanel inputPanel = createInputPane(tabWidth);
-	        
-	        // Display Panel 
-	        JPanel gridPanel = createScheduleGrid(ScheduleCalc.TIMINGS);
-	        gridPanel.setPreferredSize(new Dimension(tabWidth, (int)(0.9 * tabHeight)));
-	        
-	        // Add the components
-	        schedulePanel.add(inputPanel);
-	        schedulePanel.add(gridPanel);
-        }
-        
-        // Add the Tabs
-        controlPane.addTab("Setup", setupPanel);
-        controlPane.addTab("Schedule", schedulePanel);
-        
-        this.add(controlPane);
-    }
+        return setupPanel;
+	}
 	
 	private JPanel initClassInputPane(Dimension area, int fieldHeight, int hgap, int vgap, int padding) {
 		
@@ -357,6 +442,7 @@ JLabel[][] displayLabels;
 		
 		// Initialize the field references
 		labCheckBoxes = new JCheckBox[7][7];
+		Color greyCol = new Color(191, 191, 191);
 		
 		// Add our content
 		// i < (1 + 7) means i < (top row + 7 periods)
@@ -410,8 +496,13 @@ JLabel[][] displayLabels;
 					JCheckBox thisCheckBox = new JCheckBox();
 					thisCheckBox.setSelected(sc.isLabFree(row, col));
 					
-					cell.add(thisCheckBox, BorderLayout.CENTER);
 					labCheckBoxes[row - 1][col - 1] = thisCheckBox;
+					
+					if (sc.getBasicSchedule(col).containsValue(row)) {
+						cell.add(thisCheckBox, BorderLayout.CENTER);
+					} else {
+						cell.setBackground(greyCol);
+					}
 				}
 				
 				// Bordering
@@ -518,7 +609,7 @@ JLabel[][] displayLabels;
 		c.insets = new Insets(1, 2, 1, 2);
 		c.fill = GridBagConstraints.BOTH;
 		c.weightx = 0.0;
-		c.weighty = 0.0;
+		c.weighty = 0.5;
 		
 		// x = 0
 		c.gridx = 0;
@@ -634,6 +725,7 @@ JLabel[][] displayLabels;
 				
 				// Defaults
 				periodToSnap = -1;
+				rotToSnap = -1;
 				useFilter = false;
 				
 				// Check
@@ -650,10 +742,42 @@ JLabel[][] displayLabels;
 			}
 		});
 		inputPane.add(filterCombo, c);
-		
-		inputPane.setBorder(BorderFactory.createLineBorder(Color.black));
 
 		return inputPane;
+	}
+	
+	private JPanel createFilterPane(int width, int inPad, int outPad) {
+		JPanel filterPane = new JPanel();
+		filterPane.setLayout(new GridBagLayout());
+		
+		GridBagConstraints c = new GridBagConstraints();
+		
+		c.gridx = 0;
+		c.gridy = 0;
+		c.weightx = 1.0;
+		c.weighty = 0.0;
+		c.fill = GridBagConstraints.HORIZONTAL;
+		c.anchor = GridBagConstraints.PAGE_START;
+		JPanel contentPane = new JPanel();
+		contentPane.add(new JLabel("Test filter"));
+		int yoff = 0;
+		contentPane.setBorder(createPaddedBorder(inPad, 0, blackLines, yoff, 0));
+		filterPane.add(contentPane, c);
+		
+		c.gridx = 0;
+		c.gridy = 1;
+		c.weightx = 1.0;
+		c.weighty = 1.0;
+		c.anchor = GridBagConstraints.PAGE_START;
+		c.fill = GridBagConstraints.BOTH;
+		JPanel bottomSpacer = new JPanel();
+		bottomSpacer.setMinimumSize(new Dimension(width, 0));
+		filterPane.add(bottomSpacer, c);
+		
+		filterPane.setPreferredSize(new Dimension(width, 0));
+		//filterPane.setBorder(createPaddedBorder(outPad, outPad, blackLines, 0, 0));
+		
+		return filterPane;
 	}
 	
 	public void propertyChange(PropertyChangeEvent e) {
@@ -687,11 +811,11 @@ JLabel[][] displayLabels;
 		
 		displayLabels = new JLabel[blockRanges.length][blockRanges[0].length];
 		
-		return createGridBagPane(blockRanges, ScheduleCalc.TIMING_TEXT, colors, ScheduleCalc.TIMING_ROWS, displayLabels);
+		return createGridBagPane(blockRanges, ScheduleCalc.TIMING_TEXT, colors, ScheduleCalc.TIMING_ROWS, ScheduleCalc.CELL_PADDING, displayLabels);
 	}
 
 	// General grid pane creator
-	private JPanel createGridBagPane(BlockRange[][] blockRanges, String[][] text, Color[][] colors, String[] sideText, JLabel[][] references) {
+	private JPanel createGridBagPane(BlockRange[][] blockRanges, String[][] text, Color[][] colors, String[] sideText, int[] sidePad, JLabel[][] references) {
 		
 		// Panel and Layout
 		JPanel gridBagPane = new JPanel();
@@ -699,6 +823,7 @@ JLabel[][] displayLabels;
 		
 		// Parse
 		GridBagConstraints c = new GridBagConstraints();
+		c.anchor = GridBagConstraints.PAGE_START;
 		int maxRow = 0;
 		for (int row = 0; row < blockRanges.length; row ++) {
 			for (int col = 0; col < blockRanges[row].length; col ++) {
@@ -711,20 +836,19 @@ JLabel[][] displayLabels;
 					c.gridheight = 1;
 					
 					c.fill = GridBagConstraints.BOTH;
-					c.weightx = 0.5;
-					c.weighty = 1.0;
+					c.anchor = GridBagConstraints.PAGE_START;
+					c.weightx = 2.0;
+					c.weighty = 0.5;
 					c.gridx = col + 1;
 					c.gridy = b.start;
 					c.gridheight = (b.end - b.start);
-					c.ipady = b.pad;
+					
+					if (col == blockRanges[row].length / 2)
+						c.weightx = 2.0;
 					
 					// Determine the max row (so we can create individual ones for height requests)
 					if (maxRow < b.end)
 						maxRow = b.end;
-					
-					// Remainder constraints
-					if (col == blockRanges[row].length - 1)
-						c.gridwidth = GridBagConstraints.REMAINDER;
 					
 					JLabel thisLabel = new JLabel(text[row][col]);
 					thisLabel.setHorizontalAlignment(SwingConstants.CENTER);
@@ -739,27 +863,31 @@ JLabel[][] displayLabels;
 			}
 		}
 		
-		
+		c.ipadx = 0;
+		c.ipady = 0;
 		
 		// Append rows so that height requests are accepted
 		for (int i = 0; i < maxRow; i ++) {
 			// Create the label
 			JLabel thisLabel = new JLabel(sideText[i]);
 			thisLabel.setBackground(Color.white);
-			thisLabel.setBorder(BorderFactory.createCompoundBorder(blackLines, labelPadding));
 			thisLabel.setOpaque(true);
+			thisLabel.setFont(thisLabel.getFont().deriveFont(11.0f));
 			
 			// Basic 1 x 1 Cells
 			c.gridwidth = 1;
 			c.gridheight = 1;
 			
 			c.fill = GridBagConstraints.BOTH;
-			c.weightx = 0.1;
-			c.weighty = 0.5;
+			c.anchor = GridBagConstraints.PAGE_START;
+			c.weightx = 1.0;
+			c.weighty = 1.0;
 			c.gridx = 0;
 			c.gridy = i;
+			c.ipady = sidePad[i];
 			
 			//JButton button = new JButton("B" + i);
+			thisLabel.setBorder(createPaddedBorder(-1, 0, blackPaddedLines, 0, 0));
 			gridBagPane.add(thisLabel, c);
 		}
 		
@@ -812,5 +940,18 @@ JLabel[][] displayLabels;
 		if (parent != null) {
 			JOptionPane.showMessageDialog(parent, message);
 		}
+	}
+	
+	private Border createPaddedBorder(int innerPad, int outerPad, Border midBorder, int yoff, int xoff) {
+		Border inBorder = BorderFactory.createEmptyBorder(innerPad, innerPad, innerPad, innerPad);
+		Border outBorder = BorderFactory.createEmptyBorder(outerPad + yoff, outerPad + xoff, outerPad, outerPad);
+		
+		Border paddedBorder = inBorder;
+		if (midBorder != null) {
+			paddedBorder = BorderFactory.createCompoundBorder(midBorder, paddedBorder);
+		}
+		paddedBorder = BorderFactory.createCompoundBorder(outBorder, paddedBorder);
+		
+		return paddedBorder;
 	}
 }
