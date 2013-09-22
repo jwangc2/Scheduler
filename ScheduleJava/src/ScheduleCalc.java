@@ -37,10 +37,10 @@ public class ScheduleCalc {
 	
 	public final static BlockRange[][] TIMINGS = {
 		
-		{new BlockRange(4, 5, 30), new BlockRange(3, 5), new BlockRange(3, 6), new BlockRange(3, 5), new BlockRange(4, 5, 30)},
+		{new BlockRange(4, 5), new BlockRange(3, 5), new BlockRange(3, 6), new BlockRange(3, 5), new BlockRange(4, 5)},
 		{new BlockRange(7, 8), new BlockRange(7, 8), new BlockRange(10, 11), new BlockRange(7, 11), new BlockRange(7, 8)},
 		{new BlockRange(17, 20), new BlockRange(17, 20), new BlockRange(19, 20), new BlockRange(19, 20), new BlockRange(17, 18)},
-		{new BlockRange(23, 24, 30), new BlockRange(23, 24, 30), new BlockRange(23, 24, 30), new BlockRange(23, 24, 30), new BlockRange(22, 24)},
+		{new BlockRange(23, 24), new BlockRange(23, 24), new BlockRange(23, 24), new BlockRange(23, 24), new BlockRange(22, 24)},
 		
 		{new BlockRange(5, 7), new BlockRange(5, 7), new BlockRange(6, 10), new BlockRange(5, 7), new BlockRange(5, 7)},
 		{new BlockRange(8, 13), new BlockRange(8, 13), new BlockRange(11, 14), new BlockRange(11, 14), new BlockRange(8, 13)},
@@ -56,12 +56,12 @@ public class ScheduleCalc {
 	};
 	
 	public final static int[] CELL_PADDING = {
-		0, 0, 0, 0,
-		30, 0, 0, 0,
-		0, 0, 0, 0,
-		0, 0, 0, 0,
-		0, 0, 0, 0,
-		0, 0, 0, 30
+		5, 5, 5, 5,
+		30, 5, 5, 5,
+		5, 5, 5, 5,
+		5, 5, 5, 5,
+		5, 5, 5, 5,
+		5, 5, 5, 30
 	};
 	
 	public final static String[][] TIMING_TEXT = {
@@ -435,16 +435,27 @@ public class ScheduleCalc {
 	}
 	
 	public boolean isPeriod(Date dateToSchedule, Date pastADay, int period) {
+		return isPeriodBlock(dateToSchedule, pastADay, period, -1);
+	}
+	
+	public boolean isPeriodBlock(Date dateToSchedule, Date pastADay, int period, int block) {
 		HashMap<Integer, Integer> sched = getSchedule(dateToSchedule, pastADay);
-		return (sched.containsValue(period));
+		if (block < 0 || block > 4) {
+			return (sched.containsValue(period));
+		}
+		return (sched.get(block + 3) == period);
 	}
 	
 	public boolean isRotDay(Date dateToSchedule, Date pastADay, int rotDay) {
-		return rotDay == (weekdaysFactor(pastADay, dateToSchedule) % 7) + 1;
+		return rotDay == getRotDay(dateToSchedule, pastADay);
 	}
 	
 	public boolean isLabFree(int day, int period) {
 		return labFrees[day - 1][period - 1];
+	}
+	
+	public int getRotDay(Date dateToSchedule, Date pastADay) {
+		return (weekdaysFactor(pastADay, dateToSchedule) % 7) + 1;
 	}
 	
 	public String getClass(int period) {
@@ -467,4 +478,4 @@ public class ScheduleCalc {
 	    
 	    return c.getTime();
 	}
-}
+} 

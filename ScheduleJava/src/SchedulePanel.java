@@ -1,9 +1,6 @@
 import java.awt.BorderLayout;
 import java.awt.Color;
-import java.awt.ComponentOrientation;
-import java.awt.Container;
 import java.awt.Dimension;
-import java.awt.FlowLayout;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.GridLayout;
@@ -35,6 +32,7 @@ import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+import javax.swing.JSeparator;
 import javax.swing.JTabbedPane;
 import javax.swing.SwingConstants;
 import javax.swing.border.Border;
@@ -58,9 +56,10 @@ JLabel[][] displayLabels;
 	JComboBox<String> filterCombo;
 	
 	JCheckBox[][] labCheckBoxes;
+	JCheckBox[] periodFilterBoxes;
+	JCheckBox[] blockFilterBoxes;
+	JCheckBox mainFilterBox;
 	boolean useFilter = true;
-	int periodToSnap = -1;
-	int rotToSnap = -1;
 	
 	ScheduleCalc sc;
 	
@@ -155,7 +154,7 @@ JLabel[][] displayLabels;
         	c.weighty = 0.0;
         	c.fill = GridBagConstraints.HORIZONTAL;
 	        JPanel inputPanel = createInputPane(tabWidth);
-	        Dimension inputSize = new Dimension(tabWidth, tabHeight / 7);
+	        Dimension inputSize = new Dimension(tabWidth, (int)(tabHeight / 7.5));
 	        inputPanel.setMinimumSize(inputSize);
 	        inputPanel.setMaximumSize(inputSize);
 	        inputPanel.setPreferredSize(inputSize);
@@ -188,11 +187,11 @@ JLabel[][] displayLabels;
         	c.gridy = 1;
         	c.gridwidth = 1;
         	c.gridheight = 1;
-        	c.weightx = 1.0;
+        	c.weightx = 0.0;
         	c.weighty = 1.0;
         	c.fill = GridBagConstraints.BOTH;
         	c.anchor = GridBagConstraints.PAGE_START;
-	        JPanel gridPanel = createScheduleGrid(ScheduleCalc.TIMINGS);
+	        JPanel gridPanel = createScheduleGrid(ScheduleCalc.TIMINGS, 40);
 	        
 	        // Border
 	        TitledBorder gridBorder = new TitledBorder(createPaddedBorder(innerPad, outmostPad, blackLines, 0, 0));
@@ -247,9 +246,10 @@ JLabel[][] displayLabels;
 	        c.gridwidth = 1;
 	        c.gridheight = 1;
 	        c.weightx = 0.0;
-	        c.weighty = 0.0;
+	        c.weighty = 0.25;
 	        c.anchor = GridBagConstraints.LINE_START;
 	        JLabel testLabel = new JLabel("Past 'A' Day: ");
+	        testLabel.setBorder(BorderFactory.createEmptyBorder(10, 0, 10, 0));
 	        setupLeft.add(testLabel, c);
 	       
 	        // >Add the Text Field
@@ -258,7 +258,7 @@ JLabel[][] displayLabels;
 	        c.gridwidth = 1;
 	        c.gridheight = 1;
 	        c.weightx = 0.0;
-	        c.weighty = 0.0;
+	        c.weighty = 0.25;
 	        c.anchor = GridBagConstraints.LINE_END;
 	        padField = new JFormattedTextField(dateFormat);
 	        pastADay = sc.getDefaultPad();
@@ -531,16 +531,9 @@ JLabel[][] displayLabels;
 		c.add(Calendar.DATE, (2 - dayOfWeek));
 		
 		// Fix filter items
-		for (int i = 1; i <= 7; i ++) {
-			filterItems[i + 1] = "P" + i + ": " + sc.getClass(i);
+		for (int i = 1; i <= 8; i ++) {
+			periodFilterBoxes[i - 1].setText("P" + i + ": " + sc.getClass(i));
 		}
-		
-		int savedIndex = filterCombo.getSelectedIndex();
-		filterCombo.removeAllItems();
-		for (int i = 0; i < filterItems.length; i ++) {
-			filterCombo.addItem(filterItems[i]);
-		}
-		filterCombo.setSelectedIndex(savedIndex);
 		
 		// Monday thru Friday
 		for (int i = 0; i < 5; i ++) {
@@ -585,7 +578,7 @@ JLabel[][] displayLabels;
 			displayLabels[9][i].setText(dateFormat.format(c.getTime()));
 			
 			// Letter Day
-			int rotDay = (sc.weekdaysFactor(pastADay, c.getTime()) % 7) + 1;
+			int rotDay = sc.getRotDay(c.getTime(), pastADay);
 			String letDay = "-";
 			if (!c.getTime().before(pastADay) && !sc.isHoliday(c.getTime()))
 				letDay = "" + (char)((int)('A') + (rotDay - 1));
@@ -705,43 +698,6 @@ JLabel[][] displayLabels;
 
         });  
 		inputPane.add(nextWeekButton, c);
-		
-		// x = 4 
-		c.gridx = 4;
-		c.gridy = 0;
-		c.gridwidth = 1;
-		JLabel filterLabel = new JLabel("Inclusive Filter:");
-		inputPane.add(filterLabel, c);
-		
-		c.gridx = 4;
-		c.gridy = 1;
-		c.gridwidth = 1;
-		filterCombo = new JComboBox<String>(filterItems);
-		filterCombo.setSelectedIndex(1);
-		filterCombo.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent e) {
-				JComboBox<String> cb = (JComboBox<String>)e.getSource();
-				int index = cb.getSelectedIndex();
-				
-				// Defaults
-				periodToSnap = -1;
-				rotToSnap = -1;
-				useFilter = false;
-				
-				// Check
-				if (index > 0){
-					useFilter = true;
-					
-					if (index > 1 && index < 9) {
-						periodToSnap = index - 1;
-					}
-					else if (index == 9) {
-						periodToSnap = ScheduleCalc.LAB_FREE;
-					}
-				}
-			}
-		});
-		inputPane.add(filterCombo, c);
 
 		return inputPane;
 	}
@@ -752,20 +708,72 @@ JLabel[][] displayLabels;
 		
 		GridBagConstraints c = new GridBagConstraints();
 		
+		// Top filter
 		c.gridx = 0;
 		c.gridy = 0;
+		c.gridwidth = 2;
 		c.weightx = 1.0;
 		c.weighty = 0.0;
 		c.fill = GridBagConstraints.HORIZONTAL;
-		c.anchor = GridBagConstraints.PAGE_START;
-		JPanel contentPane = new JPanel();
-		contentPane.add(new JLabel("Test filter"));
-		int yoff = 0;
-		contentPane.setBorder(createPaddedBorder(inPad, 0, blackLines, yoff, 0));
-		filterPane.add(contentPane, c);
+		c.anchor = GridBagConstraints.LINE_START;
+		mainFilterBox = new JCheckBox("Use Filters", false);
+		filterPane.add(mainFilterBox, c);
 		
+		// Separator
 		c.gridx = 0;
 		c.gridy = 1;
+		c.gridwidth = 2;
+		c.weightx = 1.0;
+		c.weighty = 0.0;
+		c.fill = GridBagConstraints.HORIZONTAL;
+		filterPane.add(new JSeparator(JSeparator.HORIZONTAL), c);
+		
+		// Middle Filter
+		
+		// -> Mid Left
+		c.gridx = 0;
+		c.gridy = 2;
+		c.gridwidth = 1;
+		c.weightx = 0.5;
+		c.weighty = 0.0;
+		c.fill = GridBagConstraints.HORIZONTAL;
+		c.anchor = GridBagConstraints.PAGE_START;
+		
+		// --> Period Filters
+		JPanel midLeftPane = new JPanel();
+		int periods = 8;
+		midLeftPane.setLayout(new GridLayout(periods, 1));
+		periodFilterBoxes = new JCheckBox[periods];
+		for (int i = 1; i <= periods; i ++) {
+			periodFilterBoxes[i - 1] = new JCheckBox("P" + i, false);
+			midLeftPane.add(periodFilterBoxes[i - 1]);
+		}
+		filterPane.add(midLeftPane, c);
+		
+		// -> Mid Right
+		c.gridx = 1;
+		c.gridy = 2;
+		c.gridwidth = 1;
+		c.weightx = 0.5;
+		c.weighty = 0.0;
+		c.fill = GridBagConstraints.HORIZONTAL;
+		c.anchor = GridBagConstraints.PAGE_START;
+		
+		// --> Block Filters
+		JPanel midRightPane = new JPanel();
+		int blocks = 4;
+		midRightPane.setLayout(new GridLayout(blocks, 1));
+		blockFilterBoxes = new JCheckBox[blocks];
+		for (int i = 1; i <= blocks; i ++) {
+			blockFilterBoxes[i - 1] = new JCheckBox("Block " + i, false);
+			midRightPane.add(blockFilterBoxes[i - 1]);
+		}
+		filterPane.add(midRightPane, c);
+		
+		// Bottom Spacer
+		c.gridx = 0;
+		c.gridy = 3;
+		c.gridwidth = 2;
 		c.weightx = 1.0;
 		c.weighty = 1.0;
 		c.anchor = GridBagConstraints.PAGE_START;
@@ -775,7 +783,6 @@ JLabel[][] displayLabels;
 		filterPane.add(bottomSpacer, c);
 		
 		filterPane.setPreferredSize(new Dimension(width, 0));
-		//filterPane.setBorder(createPaddedBorder(outPad, outPad, blackLines, 0, 0));
 		
 		return filterPane;
 	}
@@ -790,7 +797,7 @@ JLabel[][] displayLabels;
     }
 	
 	// Personalized grid pane
-	private JPanel createScheduleGrid(BlockRange[][] blockRanges) {
+	private JPanel createScheduleGrid(BlockRange[][] blockRanges, int xPad) {
 		
 		// Use the names from the schedule
 		String[][] text = new String[blockRanges.length][blockRanges[0].length];
@@ -811,11 +818,11 @@ JLabel[][] displayLabels;
 		
 		displayLabels = new JLabel[blockRanges.length][blockRanges[0].length];
 		
-		return createGridBagPane(blockRanges, ScheduleCalc.TIMING_TEXT, colors, ScheduleCalc.TIMING_ROWS, ScheduleCalc.CELL_PADDING, displayLabels);
+		return createGridBagPane(blockRanges, xPad, ScheduleCalc.TIMING_TEXT, colors, ScheduleCalc.TIMING_ROWS, ScheduleCalc.CELL_PADDING, displayLabels);
 	}
 
 	// General grid pane creator
-	private JPanel createGridBagPane(BlockRange[][] blockRanges, String[][] text, Color[][] colors, String[] sideText, int[] sidePad, JLabel[][] references) {
+	private JPanel createGridBagPane(BlockRange[][] blockRanges, int xPad, String[][] text, Color[][] colors, String[] sideText, int[] sidePad, JLabel[][] references) {
 		
 		// Panel and Layout
 		JPanel gridBagPane = new JPanel();
@@ -837,14 +844,21 @@ JLabel[][] displayLabels;
 					
 					c.fill = GridBagConstraints.BOTH;
 					c.anchor = GridBagConstraints.PAGE_START;
-					c.weightx = 2.0;
-					c.weighty = 0.5;
+					c.weightx = 0.0;
+					c.weighty = 0.0;
 					c.gridx = col + 1;
 					c.gridy = b.start;
 					c.gridheight = (b.end - b.start);
+					c.ipadx = 0;
 					
-					if (col == blockRanges[row].length / 2)
-						c.weightx = 2.0;
+//					if (col != 0 || col != blockRanges[row].length - 1)
+//						c.weightx = 1.0;
+					
+					if (col == blockRanges[row].length / 2) {
+						c.weightx = 1.0;
+					} else {
+						c.ipadx = xPad + b.pad;
+					}
 					
 					// Determine the max row (so we can create individual ones for height requests)
 					if (maxRow < b.end)
@@ -853,7 +867,7 @@ JLabel[][] displayLabels;
 					JLabel thisLabel = new JLabel(text[row][col]);
 					thisLabel.setHorizontalAlignment(SwingConstants.CENTER);
 					thisLabel.setBackground(colors[row][col]);
-					thisLabel.setBorder(blackLines);
+					thisLabel.setBorder(createPaddedBorder(-1, 0, blackPaddedLines, 0, 0));
 					thisLabel.setOpaque(true);
 
 					gridBagPane.add(thisLabel, c);
@@ -880,7 +894,7 @@ JLabel[][] displayLabels;
 			
 			c.fill = GridBagConstraints.BOTH;
 			c.anchor = GridBagConstraints.PAGE_START;
-			c.weightx = 1.0;
+			c.weightx = 0.0;
 			c.weighty = 1.0;
 			c.gridx = 0;
 			c.gridy = i;
@@ -900,12 +914,12 @@ JLabel[][] displayLabels;
 		cal.add(Calendar.DATE, incr);
 		
 		if (snap)
-			cal.setTime(snapDate(cal.getTime(), periodToSnap, incr));
+			cal.setTime(snapDate(cal.getTime(), incr));
 		
 		return cal.getTime();
 	}
 	
-	private Date snapDate(Date d, int period, int direction) {	
+	private Date snapDate(Date d, int direction) {	
 		Calendar cal = GregorianCalendar.getInstance();
 		cal.setTime(ScheduleCalc.getZeroedDate(d));
 		
@@ -914,15 +928,48 @@ JLabel[][] displayLabels;
 		signum = (signum == 0) ? 1 : signum;
 		
 		// check for weekends
-		int dayOfWeek = cal.get(Calendar.DAY_OF_WEEK);
-		boolean skip = dayOfWeek == Calendar.SATURDAY || dayOfWeek == Calendar.SUNDAY || sc.isHoliday(cal.getTime())
-				|| (period >= 0 && !sc.isPeriod(cal.getTime(),  pastADay, period));
+		boolean skip = false;
+		int skipCount = 0;
+		int maxSkipCount = 7;
+		do {
+			int dayOfWeek = cal.get(Calendar.DAY_OF_WEEK);
+			skip = dayOfWeek == Calendar.SATURDAY || dayOfWeek == Calendar.SUNDAY || sc.isHoliday(cal.getTime());
+			// Period / Block Combo Filter
+			if (!skip && mainFilterBox.isSelected()) {
+				boolean fail = true;
+				for (int p = 0; p < periodFilterBoxes.length; p ++) {
+					if (!fail)
+						break;
+					
+					if (periodFilterBoxes[p].isSelected()) {
+						for (int b = 0; b < blockFilterBoxes.length; b ++) {
+							if (blockFilterBoxes[b].isSelected()) {
+								if (sc.isPeriodBlock(cal.getTime(), pastADay, p + 1, b + 1)) {
+									fail = false;
+									break;
+								}
+							}
+						}
+					}
+				}
+				
+				skip = fail;
+				if (fail)
+					skipCount ++;
+			}
+			
+			// Increment if we should skip this date
+			if (skip) {
+				cal.add(Calendar.DATE, signum);
+			}
+			
+		} while (skip && skipCount < maxSkipCount);
 		
-		while (skip) {
-			cal.add(Calendar.DATE, signum);
-			dayOfWeek = cal.get(Calendar.DAY_OF_WEEK);
-			skip = dayOfWeek == Calendar.SATURDAY || dayOfWeek == Calendar.SUNDAY || sc.isHoliday(cal.getTime())
-				|| (period >= 0 && !sc.isPeriod(cal.getTime(),  pastADay, period));
+		// Failure of filter.
+		if (skipCount >= maxSkipCount) {
+			mainFilterBox.setSelected(false);
+			JOptionPane.showMessageDialog(this, "Impossible combination of filters.");
+			cal.setTime(snapDate(d, direction));
 		}
 		
 		return cal.getTime();
