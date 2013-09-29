@@ -1,0 +1,4 @@
+Schedule Java Suggestions:
+--------------------------
+[*] Window Resize
+[*] Period Color Coding

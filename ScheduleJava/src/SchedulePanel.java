@@ -15,9 +15,11 @@ import java.io.IOException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
+import java.util.Collections;
 import java.util.Date;
 import java.util.GregorianCalendar;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.Map;
 
 import javax.swing.BorderFactory;
@@ -765,7 +767,7 @@ JLabel[][] displayLabels;
 		midRightPane.setLayout(new GridLayout(blocks, 1));
 		blockFilterBoxes = new JCheckBox[blocks];
 		for (int i = 1; i <= blocks; i ++) {
-			blockFilterBoxes[i - 1] = new JCheckBox("Block " + i, false);
+			blockFilterBoxes[i - 1] = new JCheckBox("Block " + i, true);
 			midRightPane.add(blockFilterBoxes[i - 1]);
 		}
 		filterPane.add(midRightPane, c);
